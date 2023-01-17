@@ -2,7 +2,8 @@ namespace AlmostAutomated.Api
 
 open Giraffe
 open Swashbuckle.AspNetCore
-open AlmostAutomated.Infrastructure.DbContext
+open AlmostAutomated.Infrastructure.DataAccess
+open System.Data
 
 #nowarn "20"
 open System
@@ -18,8 +19,6 @@ open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
-open Npgsql.EntityFrameworkCore
-open Microsoft.EntityFrameworkCore
 
 module Program =
     let helloEndpoint : HttpHandler =
@@ -42,9 +41,8 @@ module Program =
         builder.Configuration.AddEnvironmentVariables("ALMOST_")
 
         let dbConnectionString = builder.Configuration.GetConnectionString("Database")
-        builder.Services.AddDbContext<AlmostAutomatedContext>(
-            fun opt -> opt.UseNpgsql(dbConnectionString) |> ignore
-        )
+        use dataSource = openDataSource dbConnectionString
+        builder.Services.AddTransient<IDbConnection>(fun _ -> dataSource.OpenConnection())
 
         builder.Services.AddControllers()
         

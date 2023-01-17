@@ -14,6 +14,7 @@
   <ItemGroup>
     <PackageReference Include="Dapper.FSharp" Version="4.2.0" />
     <PackageReference Include="FluentMigrator" Version="3.3.2" />
+    <PackageReference Include="Npgsql" Version="7.0.1" />
   </ItemGroup>
 
   <ItemGroup>
