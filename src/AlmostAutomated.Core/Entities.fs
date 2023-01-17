@@ -25,6 +25,8 @@ module Entities =
             [<Required>]
             ValidFrom : DateTime
             ValidTo : DateTime option
+
+            TemplateId : int
         }
 
     [<CLIMutable>]
@@ -35,9 +37,6 @@ module Entities =
         
             Created : DateTime
             Deleted : DateTime option
-
-            TemplateDetailsId : int
-            TemplateDetails : TemplateDetails
         }
 
     [<CLIMutable>]

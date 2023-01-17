@@ -4,6 +4,7 @@ open Giraffe
 open Swashbuckle.AspNetCore
 open AlmostAutomated.Infrastructure.DataAccess
 open System.Data
+open TemplateHandler
 
 #nowarn "20"
 open System
@@ -21,16 +22,10 @@ open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 
 module Program =
-    let helloEndpoint : HttpHandler =
-            fun  next ctx -> 
-            task {
-                return! json "Hello" next ctx
-            }
-
     let webApp = 
         subRoute "/api" (
             choose [
-                route "/templates" >=> GET >=> helloEndpoint])
+                route "/templates" >=> GET >=> listTemplates])
 
     let exitCode = 0
 
@@ -42,9 +37,12 @@ module Program =
 
         let dbConnectionString = builder.Configuration.GetConnectionString("Database")
         use dataSource = openDataSource dbConnectionString
-        builder.Services.AddTransient<IDbConnection>(fun _ -> dataSource.OpenConnection())
-
-        builder.Services.AddControllers()
+        builder.Services
+            .AddTransient<IDbConnection>(fun _ -> dataSource.OpenConnection())
+            .AddGiraffe()
+            .AddSwaggerGen()
+            .AddControllers()
+            |> ignore
         
         let app = builder.Build()
 

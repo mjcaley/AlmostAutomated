@@ -10,9 +10,9 @@ module TemplateRepository =
     let getAll (db : IDbConnection) =
         select {
             for template in templateTable do
-            innerJoin details in templateDetailsTable on (template.TemplateDetailsId = details.Id)
+            innerJoin details in templateDetailsTable on (template.Id = details.TemplateId)
             orderBy template.Id
-        } |> db.SelectAsync<TemplateDetails>
+        } |> db.SelectAsync<Template, TemplateDetails>
         
     //let get (dbContext) (id: int) =
 
