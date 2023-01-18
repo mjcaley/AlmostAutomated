@@ -1,30 +1,31 @@
 namespace AlmostAutomated.Api
 
 open Giraffe
-open Swashbuckle.AspNetCore
 open AlmostAutomated.Infrastructure.DataAccess
 open System.Data
-open TemplateHandler
-
-#nowarn "20"
-
-open System
-open System.Collections.Generic
-open System.IO
-open System.Linq
-open System.Threading.Tasks
-open Microsoft.AspNetCore
+open Handlers
 open Microsoft.AspNetCore.Builder
-open Microsoft.AspNetCore.Hosting
-open Microsoft.AspNetCore.HttpsPolicy
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 
 module Program =
-    let webApp =
-        subRoute "/api" (choose [ route "/templates" >=> GET >=> listTemplates ])
+    let getDbConnection (dataSource: Npgsql.NpgsqlDataSource) =
+        fun () ->
+            task {
+                let! dbConn = dataSource.OpenConnectionAsync()
+                return dbConn :> IDbConnection
+            }
+
+    let webApp dataSource =
+        subRoute
+            "/api"
+            (choose
+                [ GET
+                  >=> choose
+                          [ route "/templates" >=> (listTemplatesHandler <| getDbConnection dataSource)
+                            routef "/template/%i" (getTemplateHandler <| getDbConnection dataSource) ] ])
 
     let exitCode = 0
 
@@ -49,7 +50,7 @@ module Program =
 
         app.UseHttpsRedirection()
 
-        app.UseGiraffe webApp
+        app.UseGiraffe <| webApp dataSource
 
         app.UseAuthorization()
         app.MapControllers()

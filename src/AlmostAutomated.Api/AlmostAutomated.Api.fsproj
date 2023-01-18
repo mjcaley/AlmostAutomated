@@ -8,8 +8,8 @@
     <Compile Include="WeatherForecast.fs" />
     <Compile Include="ApiSpec.fs" />
     <Compile Include="Controllers/WeatherForecastController.fs" />
-    <Compile Include="TemplateService.fs" />
-    <Compile Include="TemplateHandler.fs" />
+    <Compile Include="Services.fs" />
+    <Compile Include="Handlers.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
