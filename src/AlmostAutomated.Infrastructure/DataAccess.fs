@@ -1,13 +1,12 @@
-﻿namespace AlmostAutomated.Infrastructure
+﻿module AlmostAutomated.Infrastructure.DataAccess
 
 open Dapper.FSharp.PostgreSQL
 open AlmostAutomated.Core.Entities
 open Npgsql
 
-module DataAccess =
 
-    let openDataSource (connectionString: string) =
-        NpgsqlDataSource.Create(connectionString)
+let openDataSource (connectionString: string) =
+    NpgsqlDataSource.Create(connectionString)
 
-    let templateTable = table<Template>
-    let templateDetailsTable = table<TemplateDetails>
+let templateTable = table<Template>
+let templateDetailsTable = table<TemplateDetails>

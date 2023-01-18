@@ -1,18 +1,15 @@
-﻿namespace AlmostAutomated.Api
+﻿module AlmostAutomated.Api.TemplateHandler
 
-open Microsoft.AspNetCore.Http
+open Giraffe
 open System.Data
 open AlmostAutomated.Api.TemplateService
 
-module TemplateHandler =
-    open Giraffe
-    open AlmostAutomated.Infrastructure.TemplateRepository
 
-    let listTemplates: HttpHandler =
-        fun next ctx ->
-            task {
-                let dbConn = ctx.RequestServices.GetService(typeof<IDbConnection>) :?> IDbConnection
+let listTemplates: HttpHandler =
+    fun next ctx ->
+        task {
+            let dbConn = ctx.RequestServices.GetService(typeof<IDbConnection>) :?> IDbConnection
 
-                let! result = listTemplates dbConn
-                return! json result next ctx
-            }
+            let! result = listTemplates dbConn
+            return! json result next ctx
+        }
