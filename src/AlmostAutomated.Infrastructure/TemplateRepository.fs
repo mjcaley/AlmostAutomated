@@ -7,15 +7,16 @@ module TemplateRepository =
     open Dapper.FSharp.PostgreSQL
     open System.Data
 
-    let getAll (db : IDbConnection) =
+    let getAll (db: IDbConnection) =
         select {
             for template in templateTable do
-            innerJoin details in templateDetailsTable on (template.Id = details.TemplateId)
-            orderBy template.Id
-        } |> db.SelectAsync<Template, TemplateDetails>
-        
-    //let get (dbContext) (id: int) =
+                innerJoin details in templateDetailsTable on (template.Id = details.TemplateId)
+                orderBy template.Id
+        }
+        |> db.SelectAsync<Template, TemplateDetails>
 
-    //let update dbContext id: int =
+//let get (dbContext) (id: int) =
 
-    //let delete dbContext id: int =
+//let update dbContext id: int =
+
+//let delete dbContext id: int =

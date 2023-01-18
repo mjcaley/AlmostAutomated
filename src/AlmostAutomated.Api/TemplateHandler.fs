@@ -7,12 +7,12 @@ module TemplateHandler =
     open Giraffe
     open AlmostAutomated.Infrastructure.TemplateRepository
 
-    let listTemplates : HttpHandler =
+    let listTemplates: HttpHandler =
         fun next ctx ->
-           task {
+            task {
                 let dbConn = ctx.RequestServices.GetService(typeof<IDbConnection>) :?> IDbConnection
-                
+
                 let! templates = getAll dbConn
                 let templatesList = List.ofSeq templates
                 return! json templatesList next ctx
-           } 
+            }

@@ -6,7 +6,7 @@ open Npgsql
 
 module DataAccess =
 
-    let openDataSource (connectionString : string) =
+    let openDataSource (connectionString: string) =
         NpgsqlDataSource.Create(connectionString)
 
     let templateTable = table<Template>

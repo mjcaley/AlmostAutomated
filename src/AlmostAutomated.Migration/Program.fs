@@ -3,7 +3,7 @@ open Microsoft.Extensions.Configuration
 
 [<EntryPoint>]
 let main args =
-    let config = 
+    let config =
         ConfigurationBuilder()
             .AddCommandLine(args)
             .AddEnvironmentVariables("ALMOST_")
@@ -11,6 +11,7 @@ let main args =
             .AddJsonFile($"appsettings.Development.json", true, true)
             .AddJsonFile($"appsettings.Production.json", true, true)
             .Build()
+
     let connectionString = config.GetConnectionString "Database"
 
     migrate connectionString

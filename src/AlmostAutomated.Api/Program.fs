@@ -7,6 +7,7 @@ open System.Data
 open TemplateHandler
 
 #nowarn "20"
+
 open System
 open System.Collections.Generic
 open System.IO
@@ -22,10 +23,8 @@ open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 
 module Program =
-    let webApp = 
-        subRoute "/api" (
-            choose [
-                route "/templates" >=> GET >=> listTemplates])
+    let webApp =
+        subRoute "/api" (choose [ route "/templates" >=> GET >=> listTemplates ])
 
     let exitCode = 0
 
@@ -37,13 +36,15 @@ module Program =
 
         let dbConnectionString = builder.Configuration.GetConnectionString("Database")
         use dataSource = openDataSource dbConnectionString
-        builder.Services
+
+        builder
+            .Services
             .AddTransient<IDbConnection>(fun _ -> dataSource.OpenConnection())
             .AddGiraffe()
             .AddSwaggerGen()
             .AddControllers()
-            |> ignore
-        
+        |> ignore
+
         let app = builder.Build()
 
         app.UseHttpsRedirection()
@@ -52,7 +53,7 @@ module Program =
 
         app.UseAuthorization()
         app.MapControllers()
-        
+
         app.UseSwagger()
         app.UseSwaggerUI()
 
