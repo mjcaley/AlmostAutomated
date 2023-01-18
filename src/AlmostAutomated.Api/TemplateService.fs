@@ -1,7 +1,10 @@
-﻿namespace AlmostAutomated.Api
+﻿module AlmostAutomated.Api.TemplateService
 
-module TemplateService =
+open AlmostAutomated.Infrastructure.TemplateRepository
+open AlmostAutomated.Core.DTO
 
-    open AlmostAutomated.Infrastructure.TemplateRepository
-
-    let listTemplates dbConn = task { return! getAll dbConn }
+let listTemplates dbConn =
+    task {
+        let! templates = getAll dbConn
+        return templates |> List.ofSeq |> List.map toTemplateAndDetails' |> Map
+    }

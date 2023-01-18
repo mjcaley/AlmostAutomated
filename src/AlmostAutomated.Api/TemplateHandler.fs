@@ -2,6 +2,7 @@
 
 open Microsoft.AspNetCore.Http
 open System.Data
+open AlmostAutomated.Api.TemplateService
 
 module TemplateHandler =
     open Giraffe
@@ -12,7 +13,6 @@ module TemplateHandler =
             task {
                 let dbConn = ctx.RequestServices.GetService(typeof<IDbConnection>) :?> IDbConnection
 
-                let! templates = getAll dbConn
-                let templatesList = List.ofSeq templates
-                return! json templatesList next ctx
+                let! result = listTemplates dbConn
+                return! json result next ctx
             }
