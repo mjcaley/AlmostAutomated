@@ -11,13 +11,22 @@ let listTemplatesHandler: HttpHandler =
             return Response.ofJson result ctx
         })
 
+let internal taskResponse a' : HttpHandler =
+    fun ctx -> task { return Response.withStatusCode a' ctx }
+
+
+
 let getTemplateHandler: HttpHandler =
     Services.inject<IDbConnection> (fun dbConn ctx ->
         task {
             let route = Request.getRoute ctx
             let id = route.GetInt64 "id"
             let! result = getTemplateService dbConn id
-            return Response.ofJson result ctx
+
+            return!
+                match result with
+                | Some r -> Response.ofJson result ctx
+                | None -> taskResponse 404 ctx
         })
 
 let createTemplateHandler: HttpHandler =
@@ -37,5 +46,9 @@ let deleteTemplateHandler: HttpHandler =
             let route = Request.getRoute ctx
             let id = route.GetInt64 "id"
             let! result = deleteTemplateService dbConn id
-            return Response.ofJson result ctx
+            
+            return
+                match result with
+                | Some r -> Response.withStatusCode 200
+                | None -> Response.withStatusCode 404
         })

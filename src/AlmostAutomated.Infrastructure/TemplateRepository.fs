@@ -12,6 +12,7 @@ let getAll (dbConn: IDbConnection) =
             select {
                 for template in templateTable do
                     innerJoin details in templateDetailsTable on (template.Id = details.TemplateId)
+                    where (template.Deleted = None)
                     orderBy template.Id
             }
 
@@ -25,17 +26,19 @@ let get (dbConn: IDbConnection) (id: int64) =
             select {
                 for template in templateTable do
                     innerJoin details in templateDetailsTable on (template.Id = details.TemplateId)
-                    where (template.Id = id)
+                    where (template.Deleted = None && template.Id = id)
             }
 
         let! result = query |> dbConn.SelectAsync<Template.Select, TemplateDetails.Select>
 
-        return result |> Seq.head
+        return result |> Seq.tryHead
     }
 
 let create (dbConn: IDbConnection) (details: TemplateDetails.Insert') =
     task {
         let template: Template.Insert = { Created = DateTime.UtcNow }
+
+        let transaction = dbConn.BeginTransaction()
 
         let! insertedTemplates =
             insert {
@@ -57,6 +60,8 @@ let create (dbConn: IDbConnection) (details: TemplateDetails.Insert') =
             }
             |> dbConn.InsertAsync
 
+        transaction.Commit()
+
         return insertedTemplate.Id
     }
 
@@ -70,5 +75,5 @@ let delete (dbConn: IDbConnection) (id: int64) =
             }
             |> dbConn.UpdateOutputAsync<Template.Select, Template.Select>
 
-        return (result |> Seq.head).Id
+        return result |> Seq.tryHead
     }
