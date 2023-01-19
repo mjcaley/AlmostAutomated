@@ -1,65 +1,39 @@
 namespace AlmostAutomated.Api
 
-open Giraffe
-open AlmostAutomated.Infrastructure.DataAccess
 open System.Data
 open Handlers
-open Microsoft.AspNetCore.Builder
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
-open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
+open Falco.Routing
+open Falco.HostBuilder
 
 module Program =
-    let getDbConnection (dataSource: Npgsql.NpgsqlDataSource) =
-        fun () ->
-            task {
-                let! dbConn = dataSource.OpenConnectionAsync()
-                return dbConn :> IDbConnection
-            }
+    let config =
+        configuration [||] {
+            required_json "appsettings.json"
+            optional_json "appsettings.Development.json"
+        }
 
-    let webApp dataSource =
-        subRoute
-            "/api"
-            (choose
-                [ GET
-                  >=> choose
-                          [ route "/templates" >=> (listTemplatesHandler <| getDbConnection dataSource)
-                            routef "/template/%d" (getTemplateHandler <| getDbConnection dataSource) ] 
-                  POST >=> route "/template" >=> (createTemplateHandler <| getDbConnection dataSource) 
-                  DELETE >=> routef "/template/%d" (deleteTemplateHandler <| getDbConnection dataSource)])
+    let dbConnectionService (connectionString: string) (svc: IServiceCollection) =
+        let dataSource = Npgsql.NpgsqlDataSource.Create(connectionString)
+        svc.AddScoped<IDbConnection, Npgsql.NpgsqlConnection>(fun _ -> dataSource.OpenConnection())
 
-    let exitCode = 0
 
     [<EntryPoint>]
-    let main args =
-        let builder = WebApplication.CreateBuilder(args)
+    let main _ =
+        let exitCode = 0
 
-        builder.Configuration.AddEnvironmentVariables("ALMOST_")
+        webHost [||] {
+            logging (fun logging -> logging.ClearProviders().AddSimpleConsole().AddConfiguration(config))
 
-        let dbConnectionString = builder.Configuration.GetConnectionString("Database")
-        use dataSource = openDataSource dbConnectionString
+            add_service (dbConnectionService (config.GetConnectionString "Database"))
 
-        builder
-            .Services
-            .AddTransient<IDbConnection>(fun _ -> dataSource.OpenConnection())
-            .AddGiraffe()
-            .AddSwaggerGen()
-            .AddControllers()
-        |> ignore
-
-        let app = builder.Build()
-
-        app.UseHttpsRedirection()
-
-        app.UseGiraffe <| webApp dataSource
-
-        app.UseAuthorization()
-        app.MapControllers()
-
-        app.UseSwagger()
-        app.UseSwaggerUI()
-
-        app.Run()
+            endpoints
+                [ get "/api/templates" listTemplatesHandler
+                  get "/api/template/{id:long}" getTemplateHandler
+                  post "/api/template" createTemplateHandler
+                  delete "/api/template/{id:long}" deleteTemplateHandler ]
+        }
 
         exitCode

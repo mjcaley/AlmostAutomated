@@ -12,9 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Falco" Version="4.0.3" />
     <PackageReference Include="FSharp.OpenApi" Version="0.5.2" />
-    <PackageReference Include="Giraffe" Version="6.0.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 
   <ItemGroup>

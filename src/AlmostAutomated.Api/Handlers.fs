@@ -1,43 +1,41 @@
 ﻿module AlmostAutomated.Api.Handlers
 
-open AlmostAutomated.Core.Entities
-open Giraffe
-open System.Threading.Tasks
-open System.Data
 open Services
+open Falco
+open System.Data
 
-let internal jsonHandler service dbFactory : HttpHandler =
-    fun next ctx ->
+let listTemplatesHandler: HttpHandler =
+    Services.inject<IDbConnection> (fun dbConn ctx ->
         task {
-            let! dbConn = dbFactory ()
-            let! result = service dbConn
-            return! json result next ctx
-        }
+            let! result = listTemplatesService dbConn
+            return Response.ofJson result ctx
+        })
 
-let listTemplatesHandler dbFactory : HttpHandler =
-    jsonHandler listTemplatesService dbFactory
-
-let getTemplateHandler dbFactory id : HttpHandler =
-    fun next ctx ->
+let getTemplateHandler: HttpHandler =
+    Services.inject<IDbConnection> (fun dbConn ctx ->
         task {
-            let! dbConn = dbFactory ()
+            let route = Request.getRoute ctx
+            let id = route.GetInt64 "id"
             let! result = getTemplateService dbConn id
-            return! json result next ctx
-        }
+            return Response.ofJson result ctx
+        })
 
-let createTemplateHandler dbFactory : HttpHandler =
-    fun next ctx ->
-        task {
-            let! details = ctx.BindJsonAsync<TemplateDetails.Insert'> ()
-            let! dbConn = dbFactory ()
-            let! result = createTemplateService dbConn details
-            return! json result next ctx
-        }
+let createTemplateHandler: HttpHandler =
+    Services.inject<IDbConnection> (fun dbConn ctx ->
+        let createTemplateHandler' details : HttpHandler =
+            fun ctx ->
+                task {
+                    let! result = createTemplateService dbConn details
+                    return Response.ofJson result ctx
+                }
 
-let deleteTemplateHandler dbFactory id : HttpHandler =
-    fun next ctx ->
+        Request.mapJson createTemplateHandler' ctx)
+
+let deleteTemplateHandler: HttpHandler =
+    Services.inject<IDbConnection> (fun dbConn ctx ->
         task {
-            let! dbConn = dbFactory ()
+            let route = Request.getRoute ctx
+            let id = route.GetInt64 "id"
             let! result = deleteTemplateService dbConn id
-            return! json result next ctx
-        }
+            return Response.ofJson result ctx
+        })

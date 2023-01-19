@@ -11,8 +11,8 @@ let getAll (dbConn: IDbConnection) =
         let query =
             select {
                 for template in templateTable do
-                innerJoin details in templateDetailsTable on (template.Id = details.TemplateId)
-                orderBy template.Id
+                    innerJoin details in templateDetailsTable on (template.Id = details.TemplateId)
+                    orderBy template.Id
             }
 
         let! results = query |> dbConn.SelectAsync<Template.Select, TemplateDetails.Select>
@@ -24,9 +24,10 @@ let get (dbConn: IDbConnection) (id: int64) =
         let query =
             select {
                 for template in templateTable do
-                innerJoin details in templateDetailsTable on (template.Id = details.TemplateId)
-                where (template.Id = id)
+                    innerJoin details in templateDetailsTable on (template.Id = details.TemplateId)
+                    where (template.Id = id)
             }
+
         let! result = query |> dbConn.SelectAsync<Template.Select, TemplateDetails.Select>
 
         return result |> Seq.head
@@ -42,6 +43,7 @@ let create (dbConn: IDbConnection) (details: TemplateDetails.Insert') =
                 value template
             }
             |> dbConn.InsertOutputAsync<Template.Insert, Template.Select>
+
         let insertedTemplate = insertedTemplates |> Seq.head
 
         let! _ =
@@ -67,5 +69,6 @@ let delete (dbConn: IDbConnection) (id: int64) =
                     where (t.Id = id)
             }
             |> dbConn.UpdateOutputAsync<Template.Select, Template.Select>
+
         return (result |> Seq.head).Id
     }
