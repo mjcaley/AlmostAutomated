@@ -25,7 +25,9 @@ module Program =
                 [ GET
                   >=> choose
                           [ route "/templates" >=> (listTemplatesHandler <| getDbConnection dataSource)
-                            routef "/template/%i" (getTemplateHandler <| getDbConnection dataSource) ] ])
+                            routef "/template/%d" (getTemplateHandler <| getDbConnection dataSource) ] 
+                  POST >=> route "/template" >=> (createTemplateHandler <| getDbConnection dataSource) 
+                  DELETE >=> routef "/template/%d" (deleteTemplateHandler <| getDbConnection dataSource)])
 
     let exitCode = 0
 

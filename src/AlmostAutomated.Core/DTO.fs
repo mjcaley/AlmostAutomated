@@ -1,13 +1,13 @@
 ﻿module AlmostAutomated.Core.DTO
 
-open Entities
+open AlmostAutomated.Core.Entities
 
 type TemplateDTO =
-    { Id: int
+    { Id: int64
       Title: string
       Description: string }
 
-let toTemplateAndDetails (template: Template) (details: TemplateDetails) =
+let toTemplateAndDetails (template: Template.Select) (details: TemplateDetails.Select) =
     { Id = template.Id
       Title = details.Title
       Description = details.Description }

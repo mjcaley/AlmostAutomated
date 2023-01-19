@@ -6,7 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Entities.fs" />
+    <Compile Include="Entities\Template.fs" />
+    <Compile Include="Entities\TemplateDetails.fs" />
     <Compile Include="DTO.fs" />
     <Compile Include="Library.fs" />
   </ItemGroup>

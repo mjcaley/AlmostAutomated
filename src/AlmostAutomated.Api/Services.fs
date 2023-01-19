@@ -16,3 +16,9 @@ let getTemplateService dbConn id =
         let! template = get dbConn id
         return template |> toTemplateAndDetails'
     }
+
+
+let createTemplateService dbConn details = task { return! create dbConn details }
+
+
+let deleteTemplateService dbConn id = task { return! delete dbConn id }
