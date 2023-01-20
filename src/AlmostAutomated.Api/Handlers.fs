@@ -20,8 +20,8 @@ let getTemplateHandler: HttpHandler =
 
             return
                 match result with
-                | Some r -> Response.ofJson result ctx
-                | None -> (Response.withStatusCode 404 >> Response.ofEmpty) ctx
+                | Some r -> Response.ofJson r ctx
+                | None -> Response.withStatusCode 404 >> Response.ofEmpty <| ctx
         })
 
 let createTemplateHandler: HttpHandler =
@@ -41,9 +41,9 @@ let deleteTemplateHandler: HttpHandler =
             let route = Request.getRoute ctx
             let id = route.GetInt64 "id"
             let! result = deleteTemplateService dbConn id
-            
+
             return
                 match result with
-                | Some r -> Response.withStatusCode 200 >> Response.ofEmpty
-                | None -> Response.withStatusCode 404 >> Response.ofEmpty
+                | Some r -> Response.withStatusCode 200 >> Response.ofEmpty <| ctx
+                | None -> Response.withStatusCode 404 >> Response.ofEmpty <| ctx
         })

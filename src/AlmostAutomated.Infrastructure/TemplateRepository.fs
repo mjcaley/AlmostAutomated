@@ -71,7 +71,7 @@ let delete (dbConn: IDbConnection) (id: int64) =
             update {
                 for t in templateTable do
                     setColumn t.Deleted (Some DateTime.UtcNow)
-                    where (t.Id = id)
+                    where (t.Id = id && t.Deleted = None)
             }
             |> dbConn.UpdateOutputAsync<Template.Select, Template.Select>
 
