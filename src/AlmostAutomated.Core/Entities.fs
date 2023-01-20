@@ -1,4 +1,17 @@
-﻿module AlmostAutomated.Core.Entities.TemplateDetails
+﻿namespace AlmostAutomated.Core.Entities.Template
+
+open System
+
+[<CLIMutable>]
+type Select =
+    { Id: int64
+      Created: DateTime
+      Deleted: DateTime option }
+
+type Insert = { Created: DateTime }
+
+
+namespace AlmostAutomated.Core.Entities.TemplateDetails
 
 open System
 
