@@ -1,19 +1,18 @@
 ﻿module AlmostAutomated.Api.Services
 
 open AlmostAutomated.Core.DTO
-open AlmostAutomated.Infrastructure.TemplateRepository
 
 
-let listTemplatesService dbConn =
+let listTemplatesService repo =
     task {
-        let! templates = getAll dbConn
+        let! templates = repo
         return templates |> List.map toTemplateAndDetails'
     }
 
 
-let getTemplateService dbConn id =
+let getTemplateService repo =
     task {
-        let! template = get dbConn id
+        let! template = repo
 
         return
             match template with
@@ -22,7 +21,7 @@ let getTemplateService dbConn id =
     }
 
 
-let createTemplateService dbConn details = task { return! create dbConn details }
+let createTemplateService repo = task { return! repo }
 
 
-let deleteTemplateService dbConn id = task { return! delete dbConn id }
+let deleteTemplateService repo = task { return! repo }

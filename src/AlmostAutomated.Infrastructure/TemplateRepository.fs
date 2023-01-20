@@ -10,7 +10,7 @@ let templateTable' = table'<Template.Insert> "Template"
 let templateDetailsTable = table'<TemplateDetails.Select> "TemplateDetails"
 let templateDetailsTable' = table'<TemplateDetails.Insert> "TemplateDetails"
 
-let getAll (dbConn: IDbConnection) =
+let listTemplates (dbConn: IDbConnection) =
     task {
         let query =
             select {
@@ -24,7 +24,7 @@ let getAll (dbConn: IDbConnection) =
         return results |> List.ofSeq
     }
 
-let get (dbConn: IDbConnection) (id: int64) =
+let getTemplateById (dbConn: IDbConnection) (id: int64) =
     task {
         let query =
             select {
@@ -38,7 +38,7 @@ let get (dbConn: IDbConnection) (id: int64) =
         return result |> Seq.tryHead
     }
 
-let create (dbConn: IDbConnection) (details: TemplateDetails.Insert') =
+let createTemplate (dbConn: IDbConnection) (details: TemplateDetails.Insert') =
     task {
         let template: Template.Insert = { Created = DateTime.UtcNow }
 
@@ -69,7 +69,7 @@ let create (dbConn: IDbConnection) (details: TemplateDetails.Insert') =
         return insertedTemplate.Id
     }
 
-let delete (dbConn: IDbConnection) (id: int64) =
+let deleteTemplate (dbConn: IDbConnection) (id: int64) =
     task {
         let! result =
             update {

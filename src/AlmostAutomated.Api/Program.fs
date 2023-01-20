@@ -7,6 +7,7 @@ open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
 open Falco.Routing
 open Falco.HostBuilder
+open AlmostAutomated.Infrastructure.TemplateRepository
 
 module Program =
     let config =
@@ -30,10 +31,10 @@ module Program =
             add_service (dbConnectionService <| config.GetConnectionString "Database")
 
             endpoints
-                [ get "/api/templates" listTemplatesHandler
-                  get "/api/template/{id:long}" getTemplateHandler
-                  post "/api/template" createTemplateHandler
-                  delete "/api/template/{id:long}" deleteTemplateHandler ]
+                [ get "/api/templates" <| listTemplatesHandler listTemplates
+                  get "/api/template/{id:long}" <| getTemplateHandler getTemplateById
+                  post "/api/template" <| createTemplateHandler createTemplate
+                  delete "/api/template/{id:long}" <| deleteTemplateHandler deleteTemplate ]
         }
 
         exitCode
