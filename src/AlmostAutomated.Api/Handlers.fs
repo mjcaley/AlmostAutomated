@@ -5,14 +5,16 @@ open Falco
 open System.Data
 
 let listTemplatesHandler repo : HttpHandler =
-    Services.inject<IDbConnection> <| fun dbConn ctx ->
+    Services.inject<IDbConnection>
+    <| fun dbConn ctx ->
         task {
             let! result = listTemplatesService <| repo dbConn
             return Response.ofJson result ctx
         }
 
 let getTemplateHandler repo : HttpHandler =
-    Services.inject<IDbConnection> <| fun dbConn ctx ->
+    Services.inject<IDbConnection>
+    <| fun dbConn ctx ->
         task {
             let route = Request.getRoute ctx
             let id = route.GetInt64 "id"
@@ -20,24 +22,26 @@ let getTemplateHandler repo : HttpHandler =
 
             return
                 match result with
-                | Some r -> Response.ofJson r ctx
-                | None -> Response.withStatusCode 404 >> Response.ofEmpty <| ctx
+                | Ok r -> Response.ofJson r ctx
+                | NotFound -> Response.withStatusCode 404 >> Response.ofEmpty <| ctx
         }
 
 let createTemplateHandler repo : HttpHandler =
-    Services.inject<IDbConnection> <| fun dbConn ctx ->
+    Services.inject<IDbConnection>
+    <| fun dbConn ctx ->
         let createTemplateHandler' details : HttpHandler =
             fun ctx ->
                 task {
-                    
+
                     let! result = createTemplateService <| repo dbConn details
                     return Response.ofJson result ctx
                 }
 
         Request.mapJson createTemplateHandler' ctx
 
-let deleteTemplateHandler repo: HttpHandler =
-    Services.inject<IDbConnection> <| fun dbConn ctx ->
+let deleteTemplateHandler repo : HttpHandler =
+    Services.inject<IDbConnection>
+    <| fun dbConn ctx ->
         task {
             let route = Request.getRoute ctx
             let id = route.GetInt64 "id"

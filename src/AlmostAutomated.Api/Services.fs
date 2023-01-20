@@ -3,6 +3,11 @@
 open AlmostAutomated.Core.DTO
 
 
+type ServiceResult<'a> =
+    | Ok of 'a
+    | NotFound
+
+
 let listTemplatesService repo =
     task {
         let! templates = repo
@@ -16,8 +21,8 @@ let getTemplateService repo =
 
         return
             match template with
-            | Some t -> t |> toTemplateAndDetails' |> Some
-            | None -> None
+            | Some t -> t |> toTemplateAndDetails' |> Ok
+            | None -> NotFound
     }
 
 
