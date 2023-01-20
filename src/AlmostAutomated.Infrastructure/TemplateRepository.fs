@@ -1,10 +1,14 @@
 ﻿module AlmostAutomated.Infrastructure.TemplateRepository
 
-open DataAccess
 open AlmostAutomated.Core.Entities
 open Dapper.FSharp.PostgreSQL
 open System.Data
 open System
+
+let templateTable = table'<Template.Select> "Template"
+let templateTable' = table'<Template.Insert> "Template"
+let templateDetailsTable = table'<TemplateDetails.Select> "TemplateDetails"
+let templateDetailsTable' = table'<TemplateDetails.Insert> "TemplateDetails"
 
 let getAll (dbConn: IDbConnection) =
     task {

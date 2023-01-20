@@ -7,7 +7,6 @@
 
   <ItemGroup>
     <Compile Include="Migrations\20230117_Initial.fs" />
-    <Compile Include="DataAccess.fs" />
     <Compile Include="TemplateRepository.fs" />
   </ItemGroup>
 

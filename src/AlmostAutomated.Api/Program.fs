@@ -27,7 +27,7 @@ module Program =
         webHost [||] {
             logging (fun logging -> logging.ClearProviders().AddSimpleConsole().AddConfiguration(config))
 
-            add_service (dbConnectionService (config.GetConnectionString "Database"))
+            add_service (dbConnectionService <| config.GetConnectionString "Database")
 
             endpoints
                 [ get "/api/templates" listTemplatesHandler

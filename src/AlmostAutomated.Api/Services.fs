@@ -15,9 +15,10 @@ let getTemplateService dbConn id =
     task {
         let! template = get dbConn id
 
-        match template with
-        | Some t -> return t |> toTemplateAndDetails' |> Some
-        | None -> return None
+        return
+            match template with
+            | Some t -> t |> toTemplateAndDetails' |> Some
+            | None -> None
     }
 
 
