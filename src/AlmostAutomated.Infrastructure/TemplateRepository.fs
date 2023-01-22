@@ -10,32 +10,39 @@ let templateTable' = table'<Template.Insert> "Template"
 let templateDetailsTable = table'<TemplateDetails.Select> "TemplateDetails"
 let templateDetailsTable' = table'<TemplateDetails.Insert> "TemplateDetails"
 
-let listTemplates (dbConn: IDbConnection) =
+let internal isTemplateDeleted showDeleted (template: Template.Select * TemplateDetails.Select) =
+    let t = fst template
+    t.Deleted.IsSome = showDeleted
+
+let listTemplates (dbConn: IDbConnection) isDeleted =
     task {
         let query =
             select {
                 for template in templateTable do
                     innerJoin details in templateDetailsTable on (template.Id = details.TemplateId)
-                    where (template.Deleted = None)
                     orderBy template.Id
             }
 
         let! results = query |> dbConn.SelectAsync<Template.Select, TemplateDetails.Select>
-        return results |> List.ofSeq
+        return results |> List.ofSeq |> List.filter (isTemplateDeleted isDeleted)
     }
 
-let getTemplateById (dbConn: IDbConnection) (id: int64) =
+let getTemplateById (dbConn: IDbConnection) (id: int64) isDeleted =
     task {
         let query =
             select {
                 for template in templateTable do
                     innerJoin details in templateDetailsTable on (template.Id = details.TemplateId)
-                    where (template.Deleted = None && template.Id = id)
+                    where (template.Id = id)
             }
 
         let! result = query |> dbConn.SelectAsync<Template.Select, TemplateDetails.Select>
 
-        return result |> Seq.tryHead
+        return
+            result
+            |> List.ofSeq
+            |> List.filter (isTemplateDeleted isDeleted)
+            |> List.tryHead
     }
 
 let createTemplate (dbConn: IDbConnection) (details: TemplateDetails.Insert') =

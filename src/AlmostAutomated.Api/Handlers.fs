@@ -8,7 +8,9 @@ let listTemplatesHandler repo : HttpHandler =
     Services.inject<IDbConnection>
     <| fun dbConn ctx ->
         task {
-            let! result = listTemplatesService <| repo dbConn
+            let q = Request.getQuery ctx
+            let deleted = q.GetBoolean("deleted", false)
+            let! result = listTemplatesService <| repo dbConn deleted
             return Response.ofJson result ctx
         }
 
@@ -16,9 +18,11 @@ let getTemplateHandler repo : HttpHandler =
     Services.inject<IDbConnection>
     <| fun dbConn ctx ->
         task {
+            let q = Request.getQuery ctx
+            let deleted = q.GetBoolean("deleted", false)
             let route = Request.getRoute ctx
             let id = route.GetInt64 "id"
-            let! result = getTemplateService <| repo dbConn id
+            let! result = getTemplateService <| repo dbConn id deleted
 
             return
                 match result with
