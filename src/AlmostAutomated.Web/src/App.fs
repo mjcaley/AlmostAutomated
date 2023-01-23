@@ -1,16 +1,29 @@
 module App
 
+open Feliz
+open Feliz.Router
+open Pages.Index
+open Error404
+
+
+let routes url =
+    match url with
+    | [ ] -> Index()
+    | [ "users" ] -> Html.h1 "Users page"
+    | [ "users"; Route.Int userId ] -> Html.h1 (sprintf "User ID %d" userId)
+    | _ -> Error404()
+
+[<ReactComponent>]
+let Router() =
+    let (currentUrl, updateUrl) = React.useState(Router.currentUrl())
+    React.router [
+        router.onUrlChanged updateUrl
+        router.children [
+            routes currentUrl
+        ]
+    ]
+
 open Browser.Dom
 
-// Mutable variable to count the number of times we clicked the button
-let mutable count = 0
-
-// Get a reference to our button and cast the Element to an HTMLButtonElement
-let myButton =
-    document.querySelector (".my-button") :?> Browser.Types.HTMLButtonElement
-
-// Register our listener
-myButton.onclick <-
-    fun _ ->
-        count <- count + 1
-        myButton.innerText <- sprintf "You clicked: %i time(s)" count
+let root = ReactDOM.createRoot(document.getElementById "root")
+root.render(Router())

@@ -3,6 +3,7 @@
 // https://github.com/fable-compiler/webpack-config-template
 
 var path = require("path");
+var Dotenv = require("dotenv-webpack")
 
 module.exports = {
     mode: "development",
@@ -19,5 +20,12 @@ module.exports = {
         port: 8080,
     },
     module: {
-    }
+    },
+    plugins: [
+        new Dotenv({
+            path: "./.env",
+            silent: false,
+            systemvars: true
+        }),
+    ]
 }
