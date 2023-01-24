@@ -3,11 +3,14 @@
   "scripts": {
     "postinstall": "dotnet tool restore",
     "start": "dotnet fable watch src --run webpack-dev-server",
-    "build": "dotnet fable src && webpack"
+    "build": "dotnet fable src && webpack",
+    "pretest": "fable-splitter ../../tests/AlmostAutomated.Web.Tests -o dist/tests --commonjs",
+    "test": "mocha dist/tests"
   },
   "devDependencies": {
     "dotenv-webpack": "^8.0.1",
-    "jest": "^29.3.1",
+    "fable-splitter": "^2.2.1",
+    "mocha": "^10.2.0",
     "webpack": "^5.75.0",
     "webpack-cli": "^4.10.0",
     "webpack-dev-server": "^4.11.1"
