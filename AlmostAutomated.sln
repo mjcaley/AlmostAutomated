@@ -17,6 +17,10 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "AlmostAutomated.Infrastruct
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "AlmostAutomated.Api.Tests", "tests\AlmostAutomated.Api.Tests\AlmostAutomated.Api.Tests.fsproj", "{CB8CF56B-CF19-46BC-82B6-155D696E7F1C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{AC765D86-0125-4917-BC7B-8A4D53129976}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "AlmostAutomated.Web.Tests", "tests\AlmostAutomated.Web.Tests\AlmostAutomated.Web.Tests.fsproj", "{5FB7D739-2FE9-49A4-B234-76C6AD270762}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,11 +55,18 @@ Global
 		{CB8CF56B-CF19-46BC-82B6-155D696E7F1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CB8CF56B-CF19-46BC-82B6-155D696E7F1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CB8CF56B-CF19-46BC-82B6-155D696E7F1C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5FB7D739-2FE9-49A4-B234-76C6AD270762}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5FB7D739-2FE9-49A4-B234-76C6AD270762}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5FB7D739-2FE9-49A4-B234-76C6AD270762}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5FB7D739-2FE9-49A4-B234-76C6AD270762}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {923E5850-DBB3-468D-A436-A193CCA2A935}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{5FB7D739-2FE9-49A4-B234-76C6AD270762} = {AC765D86-0125-4917-BC7B-8A4D53129976}
 	EndGlobalSection
 EndGlobal

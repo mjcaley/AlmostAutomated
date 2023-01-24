@@ -11,6 +11,8 @@ let variable (key: string) : string = jsNative
 /// Tries to find the value of the configured variable if it is defined or returns a given default value otherwise.
 let variableOrDefault (key: string) (defaultValue: string) =
     let foundValue = variable key
-    if String.IsNullOrWhiteSpace foundValue
-    then defaultValue
-    else foundValue
+
+    if String.IsNullOrWhiteSpace foundValue then
+        defaultValue
+    else
+        foundValue
