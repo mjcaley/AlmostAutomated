@@ -3,12 +3,14 @@
     <TargetFramework>net7.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Components\Error404.fs" />
+    <Compile Include="Components\Sidebar.fs" />
     <Compile Include="Components\TemplateComponent.fs" />
+    <Compile Include="Components\Error404.fs" />
     <Compile Include="Config.fs" />
     <Compile Include="ApiClient.fs" />
     <Compile Include="Pages\Page1.fs" />
     <Compile Include="Pages\Page2.fs" />
+    <Compile Include="Pages\Templates.fs" />
     <Compile Include="Pages\Index.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>
@@ -17,8 +19,9 @@
     <PackageReference Include="Fable.Core" Version="4.0.0-theta-007" />
     <PackageReference Include="Fable.Elmish" Version="4.0.0" />
     <PackageReference Include="Feliz" Version="2.4.0" />
-    <PackageReference Include="Feliz.Bulma" Version="2.19.0" />
+    <PackageReference Include="Feliz.Bulma" Version="3.0.0-pre-002" />
     <PackageReference Include="Feliz.Router" Version="4.0.0" />
+    <PackageReference Include="Feliz.UseDeferred" Version="2.0.0" />
     <PackageReference Include="Thoth.Fetch" Version="3.0.1" />
     <PackageReference Include="Thoth.Json" Version="9.1.0" />
   </ItemGroup>

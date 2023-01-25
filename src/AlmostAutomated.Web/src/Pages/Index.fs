@@ -1,7 +1,9 @@
 ﻿module Pages.Index
 
 open Feliz
+open Feliz.Bulma
 open AlmostAutomated.Web.ApiClient
+open Sidebar
 open TemplateComponent
 
 [<ReactComponent>]
@@ -23,7 +25,13 @@ let Index () =
     React.useEffectOnce <| React.useCallback (fun () -> fetchData () |> ignore)
 
     Html.div
-        [ Html.h1 count
+        [ Sidebar ()
+          Html.h1 count
           Html.button [ prop.text "Increment"; prop.onClick (fun _ -> setCount (count + 1)) ]
           Html.p apiBase
-          Html.div (List.map TemplateComponent templates) ]
+          Html.div (List.map TemplateComponent templates)
+          Bulma.button.a [
+            color.isWarning
+            prop.onClick (fun _ -> Fable.Core.JS.eval "alert('Hello Feliz.Bulma')" |> ignore)
+            prop.text "Amazing button, ain't it?" ]
+        ]

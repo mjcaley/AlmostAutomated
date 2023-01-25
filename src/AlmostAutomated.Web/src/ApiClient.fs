@@ -32,3 +32,19 @@ let listTemplates apiBase =
                | NetworkError exc -> NetworkErr exc
                | _ -> UnknownError
     }
+
+let getTemplate apiBase id =
+    promise {
+        let! templateResult =
+            Fetch.tryGet<_, TemplateDTO>(formatApiUrl apiBase [ "template"; id ], extra=extras)
+
+        return
+            match templateResult with
+            | Ok t -> Success <| t
+            | Error message ->
+               match message with
+               | DecodingFailed _ -> DecodeError
+               | FetchFailed response -> HttpError(response.Status, response.StatusText)
+               | NetworkError exc -> NetworkErr exc
+               | _ -> UnknownError
+    }

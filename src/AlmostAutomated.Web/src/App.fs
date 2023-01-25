@@ -2,6 +2,7 @@ module App
 
 open Feliz
 open Feliz.Router
+//open Pages.Templates
 open Pages.Index
 open Error404
 
@@ -9,6 +10,7 @@ open Error404
 let routes url =
     match url with
     | [] -> Index()
+    //| [ "templates" ] -> Templates
     | [ "users" ] -> Html.h1 "Users page"
     | [ "users"; Route.Int userId ] -> Html.h1 (sprintf "User ID %d" userId)
     | _ -> Error404()
