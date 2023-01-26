@@ -1,2 +1,9 @@
 @charset "utf-8";
 @import "../node_modules/bulma/bulma.sass";
+@import url('https://fonts.googleapis.com/css2?family=PT+Sans&display=swap');
+
+$blue: #516fb6;
+
+$primary: $blue;
+
+$font-family: PT Sans, Helvetica, sans-serif;

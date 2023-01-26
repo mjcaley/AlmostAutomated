@@ -17,7 +17,7 @@ let apiBase = Config.variable "API_ROOT"
 
 let extras = Extra.empty |> Extra.withInt64
 
-let listTemplates apiBase =
+let listTemplates () =
     promise {
         let! templateResult =
             Fetch.tryGet<_, array<TemplateDTO>>(formatApiUrl apiBase [ "templates" ], extra=extras)
@@ -33,7 +33,7 @@ let listTemplates apiBase =
                | _ -> UnknownError
     }
 
-let getTemplate apiBase id =
+let getTemplate id =
     promise {
         let! templateResult =
             Fetch.tryGet<_, TemplateDTO>(formatApiUrl apiBase [ "template"; id ], extra=extras)

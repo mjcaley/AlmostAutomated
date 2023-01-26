@@ -7,6 +7,7 @@
 // Dependencies. Also required: sass, sass-loader, css-loader, style-loader, file-loader, resolve-url-loader
 var path = require('path');
 var webpack = require('webpack');
+var Dotenv = require("dotenv-webpack")
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 var CopyWebpackPlugin = require('copy-webpack-plugin');
 var MiniCssExtractPlugin = require('mini-css-extract-plugin');
@@ -40,7 +41,12 @@ var commonPlugins = [
     new HtmlWebpackPlugin({
         filename: 'index.html',
         template: resolve(CONFIG.indexHtmlTemplate)
-    })
+    }),
+    new Dotenv({
+        path: "./.env",
+        silent: false,
+        systemvars: true
+    }),
 ];
 
 module.exports = {

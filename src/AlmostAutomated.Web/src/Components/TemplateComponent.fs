@@ -6,21 +6,22 @@ open AlmostAutomated.Core.DTO
 
 [<ReactComponent>]
 let TemplateComponent (template: TemplateDTO) =
-    Html.div [
-      Bulma.card [ 
-        prop.id (int template.Id)
-        prop.children [
-          Bulma.cardContent [
-            Bulma.media [
-                Bulma.mediaContent [
-                    Bulma.title.p [
-                        Bulma.title.is4
-                        prop.text template.Title
-                    ]
-                ]
-            ]
-            Bulma.content template.Description
+    Bulma.card [ 
+      prop.id ("template-" + template.Id.ToString())
+      size.isSize7
+      spacing.mx4
+      spacing.my4
+      prop.children [
+        Bulma.cardContent [
+          Bulma.media [
+              Bulma.mediaContent [
+                  Bulma.title.p [
+                      title.is4
+                      prop.text template.Title
+                  ]
+              ]
           ]
+          Bulma.content template.Description
         ]
       ]
     ]
