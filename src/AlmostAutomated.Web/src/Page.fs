@@ -6,11 +6,23 @@ open Header
 open Sidebar
 
 [<ReactComponent>]
-let Page (content) =
+let Page (content: ReactElement) =
     Html.div [
         Header ()
 
-        Sidebar ()
+        Bulma.columns [
+            Bulma.column [
+                prop.classes [ "is-one-fifth" ]
+                prop.children [
+                    Sidebar ()
+                ]
+            ]
+            Bulma.content [
+                content
+            ]
+        ]
 
-        content ()
+        
+            
+        //]
     ]

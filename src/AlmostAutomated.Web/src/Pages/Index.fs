@@ -7,7 +7,6 @@ open TemplateComponent
 
 [<ReactComponent>]
 let Index () =
-    let (count, setCount) = React.useState (0)
     let (templates, setTemplates) = React.useState ([])
 
     let fetchData () =
@@ -23,7 +22,7 @@ let Index () =
 
     React.useEffectOnce <| React.useCallback (fun () -> fetchData () |> ignore)
 
-    Html.div
-        [ 
-          Bulma.tile (List.map TemplateComponent templates)
-        ]
+    Bulma.block [ 
+        Bulma.tile (List.map TemplateComponent templates)
+        Bulma.tile [ prop.text "+" ]
+    ]
