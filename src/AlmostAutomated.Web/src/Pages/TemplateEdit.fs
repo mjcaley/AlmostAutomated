@@ -1,13 +1,12 @@
-﻿module Templates
+module TemplateEdit
 
 open Feliz
 open Feliz.Bulma
-open Feliz.Router
 open AlmostAutomated.Web.ApiClient
 open TemplateComponent
 
 [<ReactComponent>]
-let Templates () =
+let TemplateEdit id =
     let (templates, setTemplates) = React.useState ([])
 
     let fetchData () =
@@ -23,13 +22,8 @@ let Templates () =
 
     React.useEffectOnce <| React.useCallback (fun () -> fetchData () |> ignore)
 
-    Bulma.content [
-        Bulma.container [
-            Bulma.button.a (Router.formatPath "/templates/new")
-        ]
-        
-        Bulma.block [
-            Bulma.tile (List.map TemplateComponent templates)
-        ]
+    Bulma.block [ 
+        Bulma.tile (List.map TemplateComponent templates)
+        Bulma.tile [ prop.text "+" ]
     ]
 

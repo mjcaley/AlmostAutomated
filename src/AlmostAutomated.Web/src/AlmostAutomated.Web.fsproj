@@ -3,15 +3,18 @@
     <TargetFramework>net7.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Config.fs" />
+    <Compile Include="ApiClient.fs" />
+    <Compile Include="BulmaExtensions.fs" />
     <Compile Include="Components\Header.fs" />
     <Compile Include="Components\Sidebar.fs" />
     <Compile Include="Components\TemplateComponent.fs" />
+    <Compile Include="Components\TemplateEditComponent.fs" />
     <Compile Include="Components\Error404.fs" />
-    <Compile Include="Config.fs" />
-    <Compile Include="ApiClient.fs" />
     <Compile Include="Pages\Page1.fs" />
     <Compile Include="Pages\Page2.fs" />
     <Compile Include="Pages\Templates.fs" />
+    <Compile Include="Pages\TemplateEdit.fs" />
     <Compile Include="Pages\Index.fs" />
     <Compile Include="Page.fs" />
     <Compile Include="RouterComponent.fs" />

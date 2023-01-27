@@ -1,9 +1,6 @@
 module App
 
 open Feliz
-//open Pages.Templates
-open Pages.Index
-open Error404
 open RouterComponent
 
 

@@ -2,6 +2,7 @@ module Page
 
 open Feliz
 open Feliz.Bulma
+open BulmaExtensions
 open Header
 open Sidebar
 
