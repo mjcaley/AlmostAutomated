@@ -7,20 +7,20 @@ open Microsoft.AspNetCore.Components
 open Elmish
 open Bolero
 open Bolero.Html
+open AlmostAutomated.Core.DTO
 
+type Page =
+   | [<EndPoint "/">] Home
+   | [<EndPoint "/templates">] Templates
+   | [<EndPoint "/runs">] Runs
 
-//type Page =
-//    | [<EndPoint "/">] Home
-//    | [<EndPoint "/templates">] Templates
-//    | [<EndPoint "/runs">] Runs
+type Model =
+   {
+       page: Page
+   }
 
-//type Model =
-//    {
-//        page: Page
-//    }
-
-//type Message =
-//    | SetPage of Page
+type Message =
+   | SetPage of Page
     
 
 //let update (http: HttpClient) message model =

@@ -6,25 +6,33 @@ open Microsoft.AspNetCore.Components
 open Elmish
 open Bolero
 open Bolero.Html
-open Bolero.Remoting
 open AlmostAutomated.Core.DTO
 
+type Page =
+    | [<EndPoint "/">] Home
+    | [<EndPoint "/templates">] Templates
+    | [<EndPoint "/runs">] Runs
 
 type Model =
     {
+        Page: Page
         Templates: TemplateDTO[]
         ErrorMessage: string
     }
 
-let initModel = { Templates=Array.empty; ErrorMessage="" }
-
 type Message =
+    | SetPage of Page
     | GetTemplates
     | GotTemplates of templates: TemplateDTO[]
     | Error of exn
 
+let router = Router.infer SetPage (fun model -> model.Page)
+
+let init _ = { Page=Home; Templates=Array.empty; ErrorMessage="" }, Cmd.ofMsg GetTemplates
+
 let update (httpClient: HttpClient) message model =
     match message with
+    | SetPage page -> { model with Page=page }, Cmd.none
     | GetTemplates -> 
         let getTemplates () = httpClient.GetFromJsonAsync<TemplateDTO[]>("http://localhost:5268/api/templates")
         let cmd = Cmd.OfTask.either getTemplates () GotTemplates Error
@@ -64,4 +72,4 @@ type TemplatesComponent() =
 
     override this.Program =
         let update = update this.HttpClient
-        Program.mkProgram (fun _ -> initModel, Cmd.ofMsg GetTemplates) update view
+        Program.mkProgram init update view |> Program.withRouter router
