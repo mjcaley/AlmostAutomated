@@ -17,6 +17,7 @@ let initModel () =
       ErrorMessage = "" }
 
 type Message =
+    | Init
     | GetTemplates
     | GotTemplates of templates: TemplateDTO[]
     | Error of exn
@@ -25,10 +26,11 @@ type Message =
 let init _ =
     { Templates = Array.empty
       ErrorMessage = "" },
-    Cmd.ofMsg GetTemplates
+    Cmd.none
 
 let update (httpClient: HttpClient) message model =
     match message with
+    | Init -> model, Cmd.ofMsg GetTemplates
     | GetTemplates ->
         let getTemplates () =
             httpClient.GetFromJsonAsync<TemplateDTO[]>("http://localhost:5268/api/templates")
@@ -40,7 +42,7 @@ let update (httpClient: HttpClient) message model =
 
 let view (router: Router<Page, 'model, 'msg>) model _ =
     div {
-        attr.style "border: solid;"
+        attr.style "padding: 1;"
 
         h1 { "Templates" }
         p { text $"Error: {model.ErrorMessage}" }
