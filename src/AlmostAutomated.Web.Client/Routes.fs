@@ -1,4 +1,4 @@
-﻿module AlmostAutomated.Web.Client.Routes
+﻿module Routes
 
 open Bolero
 

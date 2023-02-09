@@ -1,4 +1,4 @@
-﻿module AlmostAutomated.Web.Client.ListTemplates
+﻿module ListTemplates
 
 open System.Net.Http
 open System.Net.Http.Json
@@ -54,12 +54,14 @@ let update (httpClient: HttpClient) message model =
         eprintfn "Error: %s" exn.Message
         model, Cmd.none
 
-let view (router: Router<Page, 'model, 'msg>) model (update: Message -> unit) =
+let view (router: Router<Page, 'model, 'msg>) model dispatch =
     div {
         attr.style "padding: 1;"
 
         h1 { "Templates" }
         p { text $"Error: {model.ErrorMessage}" }
+
+        a { router.HRef NewTemplate; "New" }
 
         ul {
             for template in model.Templates do
@@ -74,7 +76,7 @@ let view (router: Router<Page, 'model, 'msg>) model (update: Message -> unit) =
                     }
 
                     button {
-                        on.click (fun _ -> update (DeleteTemplate template.Id))
+                        on.click (fun _ -> dispatch (DeleteTemplate template.Id))
                         text "Delete"
                     }
                 }
