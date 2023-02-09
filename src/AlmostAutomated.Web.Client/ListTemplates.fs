@@ -9,22 +9,23 @@ open AlmostAutomated.Core.DTO
 open Routes
 
 type Model =
-    { Templates: TemplateDTO[]
+    { Templates: TemplateDTO list
       ErrorMessage: string }
 
 let initModel () =
-    { Templates = Array.empty
+    { Templates = list.Empty
       ErrorMessage = "" }
 
 type Message =
     | Init
     | GetTemplates
-    | GotTemplates of templates: TemplateDTO[]
+    | GotTemplates of templates: TemplateDTO list
+    | DeleteTemplate of id: int64
     | Error of exn
 
 
 let init _ =
-    { Templates = Array.empty
+    { Templates = list.Empty
       ErrorMessage = "" },
     Cmd.none
 
@@ -35,14 +36,25 @@ let update (httpClient: HttpClient) message model =
         let getTemplates () =
             httpClient.GetFromJsonAsync<TemplateDTO[]>("http://localhost:5268/api/templates")
 
-        let cmd = Cmd.OfTask.either getTemplates () GotTemplates Error
+        let successTemplatesCmd templates = List.ofArray templates |> GotTemplates
+
+        let cmd = Cmd.OfTask.either getTemplates () successTemplatesCmd Error
         model, cmd
     | GotTemplates templates -> { model with Templates = templates }, Cmd.none
-    | Error exn -> 
+    | DeleteTemplate id ->
+        let deleteTemplate () =
+            httpClient.DeleteAsync($"http://localhost:5268/api/template/{id}")
+
+        let successDeleteCmd _ =
+            model.Templates |> List.filter (fun t -> t.Id <> id) |> GotTemplates
+
+        let cmd = Cmd.OfTask.either deleteTemplate () successDeleteCmd Error
+        model, cmd
+    | Error exn ->
         eprintfn "Error: %s" exn.Message
         model, Cmd.none
 
-let view (router: Router<Page, 'model, 'msg>) model _ =
+let view (router: Router<Page, 'model, 'msg>) model (update: Message -> unit) =
     div {
         attr.style "padding: 1;"
 
@@ -59,6 +71,11 @@ let view (router: Router<Page, 'model, 'msg>) model _ =
                     a {
                         router.HRef <| EditTemplate template.Id
                         "Edit"
+                    }
+
+                    button {
+                        on.click (fun _ -> update (DeleteTemplate template.Id))
+                        text "Delete"
                     }
                 }
         }

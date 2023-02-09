@@ -41,17 +41,23 @@ let view model dispatch =
         div {
             id "sidebar"
 
-            a { router.HRef Home; "Home" }
-            a { router.HRef ListTemplates; "Templates" }
+            a {
+                router.HRef Home
+                "Home"
+            }
+
+            a {
+                router.HRef ListTemplates
+                "Templates"
+            }
         }
 
         content {
             match model.Page with
             | Home -> h1 { text "Home" }
-            | ListTemplates -> ListTemplates.view router model.ListTemplatesState dispatch
+            | ListTemplates -> ListTemplates.view router model.ListTemplatesState (ListTemplatesMsg >> dispatch)
         }
     }
-    
 
 type App() =
     inherit ProgramComponent<Model, Message>()
