@@ -38,7 +38,9 @@ let update (httpClient: HttpClient) message model =
         let cmd = Cmd.OfTask.either getTemplates () GotTemplates Error
         model, cmd
     | GotTemplates templates -> { model with Templates = templates }, Cmd.none
-    | Error exn -> { model with ErrorMessage = exn.Message }, Cmd.none
+    | Error exn -> 
+        eprintfn "Error: %s" exn.Message
+        model, Cmd.none
 
 let view (router: Router<Page, 'model, 'msg>) model _ =
     div {
