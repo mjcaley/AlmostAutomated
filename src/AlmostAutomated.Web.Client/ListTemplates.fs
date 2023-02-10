@@ -62,26 +62,58 @@ let view (router: Router<Page, 'model, 'msg>) model dispatch =
         p { text $"Error: {model.ErrorMessage}" }
 
         a {
+            attr.``class`` "button is-primary"
             router.HRef NewTemplate
             "New"
         }
 
-        ul {
-            for template in model.Templates do
-                div {
-                    p { text $"Id: {string template.Id}" }
-                    p { text $"Title: {template.Title}" }
-                    p { text $"Description: {template.Description}" }
+        section {
+            attr.``class`` "section"
 
-                    a {
-                        router.HRef <| EditTemplate template.Id
-                        "Edit"
+            div {
+                attr.``class`` "container"
+
+                for template in model.Templates do
+                div {
+                    attr.id $"template-id-{template.Id}"
+                    attr.``class`` "card"
+
+                    div {
+                        attr.``class`` "card-content"
+
+                        div { attr.``class`` "title"; template.Title }
+                        div { attr.``class`` "content"; template.Description }
                     }
 
-                    button {
-                        on.click (fun _ -> dispatch (DeleteTemplate template.Id))
-                        text "Delete"
+                    div {
+                        attr.``class`` "card-footer"
+
+                        div {
+                            attr.``class`` "field is-grouped"
+                    
+                            div {
+                                attr.``class`` "card-footer-item control"
+                        
+                                a {
+                                    attr.``class`` "button is-primary"
+                                    router.HRef <| EditTemplate template.Id
+                                    "Edit"
+                                }
+                            }
+                    
+                            div {
+                                attr.``class`` "card-footer-item control"
+
+                                button {
+                                    attr.``class`` "button is-danger"
+                                    on.click (fun _ -> dispatch (DeleteTemplate template.Id))
+                                    text "Delete"
+                                }
+                            }
+                        }
                     }
                 }
+            }
         }
+        
     }
