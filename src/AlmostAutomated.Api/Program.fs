@@ -38,15 +38,17 @@ module Program =
             add_service (dbConnectionService <| config.GetConnectionString "Database")
 
             add_service (fun svc ->
-                svc.AddCors(fun opt -> opt.AddDefaultPolicy(fun policy -> policy.AllowAnyOrigin() |> ignore)))
+                svc.AddCors(fun opt ->
+                    opt.AddDefaultPolicy(fun policy ->
+                        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader() |> ignore)))
 
             use_middleware (fun app -> app.UseCors())
 
             endpoints
                 [ get "/api/templates" <| listTemplatesHandler listTemplates
-                  get "/api/template/{id:long}" <| getTemplateHandler getTemplateById
-                  post "/api/template" <| createTemplateHandler createTemplate
-                  delete "/api/template/{id:long}" <| deleteTemplateHandler deleteTemplate ]
+                  get "/api/templates/{id:long}" <| getTemplateHandler getTemplateById
+                  post "/api/templates" <| createTemplateHandler createTemplate
+                  delete "/api/templates/{id:long}" <| deleteTemplateHandler deleteTemplate ]
         }
 
         exitCode

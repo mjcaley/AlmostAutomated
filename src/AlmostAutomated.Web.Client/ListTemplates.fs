@@ -43,7 +43,7 @@ let update (httpClient: HttpClient) message model =
     | GotTemplates templates -> { model with Templates = templates }, Cmd.none
     | DeleteTemplate id ->
         let deleteTemplate () =
-            httpClient.DeleteAsync($"http://localhost:5268/api/template/{id}")
+            httpClient.DeleteAsync($"http://localhost:5268/api/templates/{id}")
 
         let successDeleteCmd _ =
             model.Templates |> List.filter (fun t -> t.Id <> id) |> GotTemplates
@@ -61,7 +61,10 @@ let view (router: Router<Page, 'model, 'msg>) model dispatch =
         h1 { "Templates" }
         p { text $"Error: {model.ErrorMessage}" }
 
-        a { router.HRef NewTemplate; "New" }
+        a {
+            router.HRef NewTemplate
+            "New"
+        }
 
         ul {
             for template in model.Templates do

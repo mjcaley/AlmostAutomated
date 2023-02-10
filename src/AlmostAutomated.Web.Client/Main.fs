@@ -16,7 +16,7 @@ type Message =
 type Model =
     { Page: Page
       ListTemplatesState: ListTemplates.Model
-      NewTemplateState : NewTemplate.Model }
+      NewTemplateState: NewTemplate.Model }
 
 let router = Router.infer SetPage (fun model -> model.Page)
 
@@ -32,7 +32,7 @@ let update (httpClient: HttpClient) message model =
         match page with
         | Home -> { model with Page = page }, Cmd.none
         | ListTemplates -> { model with Page = page }, Cmd.map ListTemplatesMsg <| Cmd.ofMsg ListTemplates.Init
-        | NewTemplate -> { model with Page = page }, Cmd.map NewTemplateMsg <| Cmd.ofMsg NewTemplate.New
+        | NewTemplate -> { model with Page = page }, Cmd.map NewTemplateMsg <| Cmd.ofMsg NewTemplate.Edit
     | ListTemplatesMsg msg ->
         let listState, listCmd =
             ListTemplates.update httpClient msg model.ListTemplatesState
@@ -40,8 +40,7 @@ let update (httpClient: HttpClient) message model =
         let appCmd = Cmd.map ListTemplatesMsg listCmd
         { model with ListTemplatesState = listState }, appCmd
     | NewTemplateMsg msg ->
-        let newState, newCmd = 
-            NewTemplate.update httpClient msg model.NewTemplateState
+        let newState, newCmd = NewTemplate.update httpClient msg model.NewTemplateState
         let appCmd = Cmd.map NewTemplateMsg newCmd
         { model with NewTemplateState = newState }, appCmd
 

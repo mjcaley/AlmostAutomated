@@ -5,20 +5,22 @@ open System.Net.Http.Json
 open Elmish
 open Bolero
 open Bolero.Html
-open AlmostAutomated.Core.DTO
-open Routes
 
-type Model = TemplateDTO
+type Model =
+    { Id: int64 option
+      Title: string
+      Description: string }
 
 let initModel () =
-    { Id = -1;
-      Title = "";
-      Description = ""}
+    { Id = None
+      Title = ""
+      Description = "" }
 
 type Message =
-    | New
-    | Save
+    | Update of Model
     | Edit
+    | SaveNew
+    | SaveExisting
     | Error of exn
     | SetTitle of string
     | SetDescription of string
@@ -26,19 +28,33 @@ type Message =
 
 let init _ = initModel (), Cmd.none
 
-let update (httpClient: HttpClient) message model =
+
+let update (httpClient: HttpClient) message (model: Model) =
     match message with
-    | New -> model, Cmd.none
     | Edit -> model, Cmd.none
-    | Save ->
+    | SaveNew ->
         let postTemplate () =
-            httpClient.PostAsJsonAsync<TemplateDTO>($"http://localhost:5268/api/template", model)
+            task {
+                let! response =
+                    httpClient.PostAsJsonAsync(
+                        $"http://localhost:5268/api/templates",
+                        {| Title = model.Title
+                           Description = model.Description |}
+                    )
 
-        let updateId _ =
-            Edit
+                if response.IsSuccessStatusCode then
+                    let! body = response.Content.ReadFromJsonAsync<int64>()
+                    return { model with Id = Some body }
+                else
+                    return model
+            }
 
-        let cmd = Cmd.OfTask.either postTemplate () updateId Error
-        model, Cmd.none
+        let cmd =
+            Cmd.OfTask.either postTemplate () (fun newModel -> Update <| newModel) Error
+
+        model, cmd
+    | SaveExisting -> model, Cmd.none
+    | Update template -> template, Cmd.ofMsg Edit
     | Error exn ->
         eprintfn "Error: %s" exn.Message
         model, Cmd.none
@@ -49,18 +65,18 @@ let view model dispatch =
     div {
         attr.style "padding: 1;"
 
-        h1 { $"Template {model.Id}" }
+        input { bind.input.string model.Title (dispatch << SetTitle) }
+        input { bind.input.string model.Description (dispatch << SetDescription) }
 
-        input {
-            attr.``type`` "input"
-            bind.input.string model.Title (dispatch << SetTitle)
-        }
-        input {
-            attr.``type`` "input"
-            bind.input.string model.Description (dispatch << SetDescription)
-        }
-        button {
-            
-            text "Save"
-        }
+        match model.Id with
+        | Some _ ->
+            button {
+                on.click (fun _ -> dispatch SaveExisting)
+                "Save"
+            }
+        | None ->
+            button {
+                on.click (fun _ -> dispatch SaveNew)
+                "Save"
+            }
     }
