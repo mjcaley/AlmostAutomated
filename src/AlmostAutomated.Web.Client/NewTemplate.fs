@@ -18,7 +18,7 @@ let initModel () =
 type Message =
     | New
     | Save
-    | Edit of TemplateDTO
+    | Edit
     | Error of exn
     | SetTitle of string
     | SetDescription of string
@@ -29,16 +29,16 @@ let init _ = initModel (), Cmd.none
 let update (httpClient: HttpClient) message model =
     match message with
     | New -> model, Cmd.none
-    | Edit t -> t, Cmd.none
+    | Edit -> model, Cmd.none
     | Save ->
         let postTemplate () =
-            httpClient.PostAsJsonAsync($"http://localhost:5268/api/template", model)
+            httpClient.PostAsJsonAsync<TemplateDTO>($"http://localhost:5268/api/template", model)
 
-        let updateId template =
-            { model with Id = template.Id } |> Edit
+        let updateId _ =
+            Edit
 
         let cmd = Cmd.OfTask.either postTemplate () updateId Error
-        model, cmd
+        model, Cmd.none
     | Error exn ->
         eprintfn "Error: %s" exn.Message
         model, Cmd.none
