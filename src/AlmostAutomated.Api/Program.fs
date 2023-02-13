@@ -45,7 +45,8 @@ module Program =
             use_middleware (fun app -> app.UseCors())
 
             endpoints
-                [ get "/api/templates" <| listTemplatesHandler listTemplates
+                [ get "/" healthCheck
+                  get "/api/templates" <| listTemplatesHandler listTemplates
                   get "/api/templates/{id:long}" <| getTemplateHandler getTemplateById
                   post "/api/templates" <| createTemplateHandler createTemplate
                   delete "/api/templates/{id:long}" <| deleteTemplateHandler deleteTemplate ]
