@@ -1,0 +1,5 @@
+!*.sln
+!src/
+!tests/
+bin/*
+obj/*
