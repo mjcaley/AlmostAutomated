@@ -1,3 +1,5 @@
+
+
 almost-automated-api:
   replicaCount: 1
 
@@ -28,3 +30,14 @@ almost-automated-api:
 
   serviceAccount:
     create: false
+  
+  postgresqlUserPassword: password
+  postgresqlAdminPassword: postgresql-password
+
+global:
+  postgresql:
+    fullname: postgresql
+    auth:
+      existingSecret: postgresql-auth
+      username: almostapidb
+      database: almostapidb

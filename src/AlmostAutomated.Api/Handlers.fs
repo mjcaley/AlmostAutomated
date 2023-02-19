@@ -4,7 +4,7 @@ open Services
 open Falco
 open System.Data
 
-let healthCheck : HttpHandler = Response.withStatusCode 200 >> Response.ofEmpty
+let healthCheck: HttpHandler = Response.withStatusCode 200 >> Response.ofEmpty
 
 let listTemplatesHandler repo : HttpHandler =
     Services.inject<IDbConnection>

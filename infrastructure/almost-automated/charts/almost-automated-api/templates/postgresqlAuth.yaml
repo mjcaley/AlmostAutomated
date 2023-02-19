@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Secret
+immutable: true
+metadata:
+  name: postgresql-auth
+type: Opaque
+data:
+  postgres-password: {{ .Values.postgresqlAdminPassword | b64enc | quote }}
+  password: {{ .Values.postgresqlUserPassword | b64enc | quote }}

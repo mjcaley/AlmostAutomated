@@ -13,5 +13,10 @@ WORKDIR /app
 COPY --from=build /app ./
 
 ENV ASPNETCORE_URLs=http://*:5000
+ENV DB_HOST="host.docker.internal"
+ENV DB_PORT=5432
+ENV DB_USERNAME="almostapidb"
+ENV DB_PASSWORD="password"
+ENV DB_NAME="almostapidb"
 
 ENTRYPOINT [ "dotnet", "AlmostAutomated.Api.dll" ]
