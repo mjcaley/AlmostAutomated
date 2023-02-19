@@ -10,22 +10,13 @@ open Falco.Routing
 open Falco.HostBuilder
 open AlmostAutomated.Infrastructure.TemplateRepository
 
-
-let config =
-    configuration [||] {
-        required_json "appsettings.json"
-        optional_json "appsettings.Development.json"
-    }
-
-// let corsService
-
 [<EntryPoint>]
 let main args =
 
     let config =
         configuration args {
-            required_json "appSettings.json"
-            optional_json "appSettings.Development.json"
+            required_json "appsettings.json"
+            optional_json "appsettings.Development.json"
             add_env
         }
 

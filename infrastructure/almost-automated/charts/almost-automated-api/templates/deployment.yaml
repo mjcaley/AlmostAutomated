@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "almost-automated-api.fullname" . }}
+  name: {{ include "almost-automated-api.name" . }}
   labels:
     {{- include "almost-automated-api.labels" . | nindent 4 }}
 spec:
@@ -27,6 +27,13 @@ spec:
       serviceAccountName: {{ include "almost-automated-api.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+      - name: "{{ .Chart.Name }}-init"
+        image: "groundnuty/k8s-wait-for:v2.0"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        args:
+        - "job"
+        - "almost-automated-migration-{{ .Release.Revision}}"
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -49,13 +56,13 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           env:
             - name: DB_HOST
-              value: {{ include "almost-automated-api.fullname" . }}-{{ .Values.postgresql.fullname }}
+              value: {{ .Release.Name }}-postgresql
             - name: DB_USER
-              value: {{ .Values.postgresql.auth.username }}
+              value: {{ .Values.global.postgresql.auth.username }}
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: postgresql-auth
+                  name: {{ .Release.Name }}-postgresql
                   key: password
       {{- with .Values.nodeSelector }}
       nodeSelector:
