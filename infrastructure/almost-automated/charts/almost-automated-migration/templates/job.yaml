@@ -11,6 +11,14 @@ spec:
       labels:
         {{- include "almost-automated-migration.selectorLabels" . | nindent 8 }}
     spec:
+      initContainers:
+      - name: await-db-ready
+        image: postgres:15
+        command: ["/bin/sh"]
+        args: ["-c", "until pg_isready -h $(DB_HOST) -p 5432; do echo waiting for database; sleep 2; done;"]
+        env:
+          - name: DB_HOST
+            value: {{ .Release.Name }}-postgresql
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"

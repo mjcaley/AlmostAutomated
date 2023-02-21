@@ -1,5 +1,6 @@
 global:
   postgresql:
+    name: postgresql
     auth:
       username: almostapidb
       database: almostapidb
