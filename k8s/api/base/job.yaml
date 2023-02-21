@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: almost-automated-migration-1
+  labels:
+    app: almost-automated-migration
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app: almost-automated-migration
+    spec:
+      initContainers:
+      - name: await-db-ready
+        image: postgres:15
+        command: ["/bin/sh"]
+        args: ["-c", "until pg_isready -h $(DB_HOST) -p 5432; do echo waiting for database; sleep 2; done;"]
+        env:
+          - name: DB_HOST
+            value: almost-automated-db
+      containers:
+      - name: almost-migration
+        image: almost-migration:1.0
+        imagePullPolicy: IfNotPresent
+        command: [ "dotnet" ]
+        args: [ "AlmostAutomated.Migration.dll" ]
+        env:
+          - name: DB_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: almost-automated-db
+                key: host
+          - name: DB_USER
+            valueFrom:
+              configMapKeyRef:
+                name: almost-automated-db
+                key: user
+          - name: DB_PASSWORD
+            valueFrom:
+                secretKeyRef:
+                  name: almost-automated-db
+                  key: password
+      restartPolicy: Never

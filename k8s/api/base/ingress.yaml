@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: almost-automated-api
+  labels:
+    app: almost-automated-api
+spec:
+  rules:
+    - host: api.almostautomated.local
+      http:
+        paths:
+        - path: /api
+          pathType: Prefix
+          backend:
+            service:
+                name: almost-automated-api
+                port:
+                  number: 5000
