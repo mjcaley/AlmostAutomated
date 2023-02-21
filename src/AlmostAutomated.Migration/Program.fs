@@ -7,8 +7,8 @@ let main args =
         ConfigurationBuilder()
             .AddCommandLine(args)
             .AddJsonFile("appsettings.json", true, true)
-            .AddJsonFile($"appsettings.Development.json", true, true)
-            .AddJsonFile($"appsettings.Production.json", true, true)
+            .AddJsonFile("appsettings.Development.json", true, true)
+            .AddJsonFile("appsettings.Production.json", true, true)
             .AddEnvironmentVariables()
             .Build()
 

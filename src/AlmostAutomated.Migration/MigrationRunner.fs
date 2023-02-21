@@ -3,7 +3,7 @@
 open FluentMigrator.Runner
 open FluentMigrator.Runner.Initialization
 open Microsoft.Extensions.DependencyInjection
-open AlmostAutomated.Infrastructure.Migrations
+open AlmostAutomated.Migration.Migrations
 
 let migrate (connectionString: string) =
     use serviceProvider =

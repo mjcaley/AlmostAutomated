@@ -6,7 +6,6 @@ open Microsoft.AspNetCore.Builder
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
-open FsConfig
 open Falco.Routing
 open Falco.HostBuilder
 open AlmostAutomated.Infrastructure.TemplateRepository
