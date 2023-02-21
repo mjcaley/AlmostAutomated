@@ -6,13 +6,14 @@ open Microsoft.AspNetCore.Builder
 open Microsoft.Extensions.Configuration
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
+open FsConfig
 open Falco.Routing
 open Falco.HostBuilder
 open AlmostAutomated.Infrastructure.TemplateRepository
 
+
 [<EntryPoint>]
 let main args =
-
     let config =
         configuration args {
             required_json "appsettings.json"
@@ -29,6 +30,7 @@ let main args =
 
         let connectionString =
             $"Include Error Detail=True;Host={host};Port={port};Database={database};Username={username};Password={password}"
+        printfn "Connection string: %s" connectionString
 
         let dataSource = Npgsql.NpgsqlDataSource.Create(connectionString)
         svc.AddScoped<IDbConnection, Npgsql.NpgsqlConnection>(fun _ -> dataSource.OpenConnection())
@@ -43,7 +45,7 @@ let main args =
                 .AddConfiguration(config)
                 .SetMinimumLevel(LogLevel.Debug))
 
-        add_service (fun service -> dbConnectionService service)
+        add_service (dbConnectionService)
 
         add_service (fun svc ->
             svc.AddCors(fun opt ->

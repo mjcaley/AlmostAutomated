@@ -1,6 +1,3 @@
-!*.sln
-!src/
-!tests/
 bin/*
 obj/*
 appsettings.Development.json
