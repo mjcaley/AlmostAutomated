@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: almost-automated-db
-data:
-  name: almostapidb
