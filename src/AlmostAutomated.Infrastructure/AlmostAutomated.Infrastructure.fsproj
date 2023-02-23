@@ -6,16 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Migrations\20230117_Initial.fs" />
     <Compile Include="TemplateRepository.fs" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Dapper.FSharp" Version="4.2.0" />
-    <PackageReference Include="FluentMigrator" Version="3.3.2" />
-    <PackageReference Include="FluentMigrator.Extensions.Postgres" Version="3.3.2" />
-    <PackageReference Include="FluentMigrator.Runner" Version="3.3.2" />
-    <PackageReference Include="FluentMigrator.Runner.Postgres" Version="3.3.2" />
     <PackageReference Include="Npgsql" Version="7.0.1" />
   </ItemGroup>
 

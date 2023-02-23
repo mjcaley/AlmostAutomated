@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Chart.Name }}-{{ .Release.Revision }}
+  labels:
+    {{- include "almost-automated-migration.labels" . | nindent 4 }}
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        {{- include "almost-automated-migration.selectorLabels" . | nindent 8 }}
+    spec:
+      initContainers:
+      - name: await-db-ready
+        image: postgres:15
+        command: ["/bin/sh"]
+        args: ["-c", "until pg_isready -h $(DB_HOST) -p 5432; do echo waiting for database; sleep 2; done;"]
+        env:
+          - name: DB_HOST
+            value: {{ .Release.Name }}-postgresql
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command: [ "dotnet" ]
+        args: [ "AlmostAutomated.Migration.dll" ]
+        env:
+          - name: DB_HOST
+            value: {{ .Release.Name }}-postgresql
+          - name: DB_USER
+            value: {{ .Values.global.postgresql.auth.username }}
+          - name: DB_PASSWORD
+            valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-postgresql
+                  key: password
+      restartPolicy: {{ .Values.job.restartPolicy }}

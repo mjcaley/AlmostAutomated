@@ -1,0 +1,46 @@
+global:
+  postgresql:
+    name: postgresql
+    auth:
+      username: almostapidb
+      database: almostapidb
+
+almost-automated-api:
+  replicaCount: 1
+
+  image:
+    repository: almost-api
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 5000
+
+  ingress:
+    enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /
+    hosts:
+      - host: api.almostautomated.local
+        paths:
+        - path: /api
+          pathType: Prefix
+          backend:
+            serviceName: almost-automated-api
+            servicePort: 5000
+
+  autoscaling:
+    enabled: false
+
+  serviceAccount:
+    create: false
+
+almost-automated-migration:
+  image:
+    repository: almost-migration
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  job:
+    restartPolicy: Never
