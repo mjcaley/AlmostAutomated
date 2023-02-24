@@ -13,10 +13,9 @@ let toBase64 (string: string) =
     let bytes = System.Text.Encoding.UTF8.GetBytes(string)
     System.Convert.ToBase64String(bytes)
 
-[<Literal>]
-let namespaceName = "almost-automated"
-
 let db () =
+    let ns = Namespace("almost-automated")
+
     let appLabels = inputMap [ "app", input "almost-automated" ]
 
     let containers = inputList [
@@ -30,10 +29,10 @@ let db () =
     let config = ConfigMap("db",
         ConfigMapArgs(
             Metadata = ObjectMetaArgs(
-                Namespace = namespaceName
+                Namespace = ns.GetResourceName()
             ),
             Data = inputMap [
-                ("name", input "almostapidb")
+                ("POSTGRES_DB", input "almostapidb")
             ]
         )
     )
@@ -41,11 +40,11 @@ let db () =
     let auth = Secret("db",
         SecretArgs(
             Metadata = ObjectMetaArgs(
-                Namespace = namespaceName
+                Namespace = ns.GetResourceName()
             ),
             Data = inputMap [
-                ("username", input <| toBase64 "almostapidb");
-                ("password", input <| toBase64 "password")
+                ("POSTGRES_USER", input <| toBase64 "almostapidb");
+                ("POSTGRES_PASSWORD", input <| toBase64 "password")
             ]
         )
     )
@@ -53,7 +52,7 @@ let db () =
     let persistentVolume = PersistentVolume("db",
         PersistentVolumeArgs(
             Metadata = ObjectMetaArgs(
-                Namespace = namespaceName
+                Namespace = ns.GetResourceName()
             ),
             Spec = PersistentVolumeSpecArgs(
                 StorageClassName = "local-path",
@@ -71,7 +70,7 @@ let db () =
     let persistentVolumeClaim = PersistentVolumeClaim("db",
         PersistentVolumeClaimArgs(
             Metadata = ObjectMetaArgs(
-                Namespace = namespaceName
+                Namespace = ns.GetResourceName()
             ),
             Spec = PersistentVolumeClaimSpecArgs(
                 Resources = ResourceRequirementsArgs(
@@ -87,16 +86,63 @@ let db () =
     let deployment = Deployment("db",
         DeploymentArgs(
             Metadata = ObjectMetaArgs(
-                Namespace = namespaceName
+                Namespace = ns.GetResourceName()
             ),
             Spec = DeploymentSpecArgs(
                 Replicas = 1,
-                Selector = LabelSelectorArgs(MatchLabels = inputMap [ dbLabels ])
+                Selector = LabelSelectorArgs(MatchLabels = inputMap [ dbLabels ]),
+                Template = PodTemplateSpecArgs(
+                    Metadata = ObjectMetaArgs(
+                        Namespace = ns.GetResourceName(),
+                        Labels = inputMap [ dbLabels ]
+                    ),
+                    Spec = PodSpecArgs(
+                        Containers = inputList [
+                            input <| ContainerArgs(
+                                Name = "db",
+                                Image = "postgres:15",
+                                ImagePullPolicy = "IfNotPresent",
+                                Ports = inputList [
+                                    input <| ContainerPortArgs(ContainerPortValue = 5432)
+                                ],
+                                EnvFrom = inputList [
+                                    input <| EnvFromSourceArgs(
+                                        ConfigMapRef = ConfigMapEnvSourceArgs(
+                                            Name = config.GetResourceName()
+                                        )
+                                    );
+                                    input <| EnvFromSourceArgs(
+                                        SecretRef = SecretEnvSourceArgs(
+                                            Name = auth.GetResourceName()
+                                        )
+                                    );
+                                ],
+                                VolumeMounts = inputList [
+                                    input <| VolumeMountArgs(
+                                        MountPath = "/var/lib/postgresql/data",
+                                        Name = "postgresdata"
+                                    )
+                                ]
+                            )
+                        ],
+                        Volumes = inputList [
+                            input <| VolumeArgs(
+                                Name = "postgresdata",
+                                PersistentVolumeClaim = (input <| PersistentVolumeClaimVolumeSourceArgs(
+                                        ClaimName = persistentVolumeClaim.GetResourceName()
+                                ))
+                            )
+                        ]
+                    )
+                )
             )
         )
     )
 
-    dict []
+    dict [
+        ("auth", auth :> obj);
+        ("config", config :> obj)
+    ]
 
   //let podSpecs = PodSpecArgs(Containers = containers)
 
