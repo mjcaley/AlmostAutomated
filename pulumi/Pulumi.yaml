@@ -1,0 +1,3 @@
+name: AlmostAutomated.Deployment
+runtime: dotnet
+description: AlmostAutomated infrastructure-as-code
