@@ -7,6 +7,8 @@ open Pulumi.Kubernetes.Types.Inputs.Meta.V1
 open Pulumi.Kubernetes.Apps.V1
 open Pulumi.Kubernetes.Core.V1
 open Pulumi.Kubernetes.Types.Outputs.Meta.V1
+open Pulumi.FSharp.Kubernetes.Core.V1
+open Pulumi.FSharp.Kubernetes.Meta.V1.Inputs
 
 
 let toBase64 (string: string) =
@@ -106,7 +108,10 @@ let db () =
                                 Image = "postgres:15",
                                 ImagePullPolicy = "IfNotPresent",
                                 Ports = inputList [
-                                    input <| ContainerPortArgs(ContainerPortValue = 5432)
+                                    input <| ContainerPortArgs(
+                                        Name = "postgres-tcp",
+                                        ContainerPortValue = 5432
+                                    )
                                 ],
                                 EnvFrom = inputList [
                                     input <| EnvFromSourceArgs(
@@ -142,10 +147,33 @@ let db () =
         )
     )
 
+    let service = Service("db",
+        ServiceArgs(
+            Metadata = ObjectMetaArgs(
+                Namespace = ioMetaName ns
+            ),
+            Spec = ServiceSpecArgs(
+                Selector = inputMap [
+                    dbLabels
+                ],
+                Ports = ServicePortArgs(
+                    Name = "postgres-tcp",
+                    Port = 5432,
+                    TargetPort = "postgres-tcp"
+                )
+            )
+        )
+    )
+
     dict [
+        ("namespace", ns :> obj);
         ("auth", auth :> obj);
-        ("config", config :> obj)
+        ("config", config :> obj);
+        ("service", service :> obj)
     ]
+
+
+
 
   //let podSpecs = PodSpecArgs(Containers = containers)
 
