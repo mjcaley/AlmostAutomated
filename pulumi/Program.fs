@@ -18,19 +18,11 @@ let toBase64 (string: string) =
 let ioMetaName (res: Namespace) =
     io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) res.Metadata)
 
-let db () =
-    let ns = Namespace("almost-automated")
 
-    let appLabels = inputMap [ "app", input "almost-automated" ]
+let ns () =
+    Namespace("almost-automated")
 
-    let containers = inputList [
-        input (ContainerArgs(
-            Name = "almost-automated-db",
-            Image = "postgres:15",
-            Ports = inputList [ input(ContainerPortArgs(ContainerPortValue = 5432)) ]
-        ))
-    ]
-
+let db ns =
     let config = ConfigMap("db",
         ConfigMapArgs(
             Metadata = ObjectMetaArgs(
@@ -165,14 +157,71 @@ let db () =
         )
     )
 
+    auth, config, service
+
+let api ns (dbAuth: Secret) (dbConfig: ConfigMap) (dbService: Service) =
+    let nsName = ioMetaName ns
+
+    let appLabels = ("app", input "api")
+    
+    let deployment = Deployment("api",
+        DeploymentArgs(
+            Metadata = ObjectMetaArgs(
+                Namespace = ioMetaName ns
+            ),
+            Spec = DeploymentSpecArgs(
+                Replicas = 1,
+                Selector = LabelSelectorArgs(MatchLabels = inputMap [ appLabels ]),
+                Template = PodTemplateSpecArgs(
+                    Metadata = ObjectMetaArgs(
+                        Namespace = ioMetaName ns,
+                        Labels = inputMap [ appLabels ]
+                    ),
+                    Spec = PodSpecArgs(
+                        Containers = inputList [
+                            input <| ContainerArgs(
+                                Name = "db",
+                                Image = "almost-api:latest",
+                                ImagePullPolicy = "IfNotPresent",
+                                Ports = inputList [
+                                    input <| ContainerPortArgs(
+                                        Name = "postgres-tcp",
+                                        ContainerPortValue = 5000
+                                    )
+                                ],
+                                Env = inputList [
+                                    input <| EnvVarArgs(
+                                        Name = "DB_HOST",
+                                        Value = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) dbService.Metadata)
+                                    );
+                                    input <| EnvVarArgs(
+                                        Name = "DB_USER",
+                                        Value = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) dbAuth.Metadata)
+                                    );
+                                    input <| EnvVarArgs(
+                                        Name = "DB_PASSWORD",
+                                        Value = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) dbAuth.Metadata)
+                                    )
+                                ]
+                            )
+                        ]
+                    )
+                )
+            )
+        )
+    )
+
+    {| Service = "" |}
+
+
+let infra () =
+    let ns = ns ()
+    let dbAuth, dbConfig, dbService = db ns
+    let api = api ns dbAuth dbConfig dbService
+
     dict [
-        ("namespace", ns :> obj);
-        ("auth", auth :> obj);
-        ("config", config :> obj);
-        ("service", service :> obj)
+        ("namespace", ns :> obj)
     ]
-
-
 
 
   //let podSpecs = PodSpecArgs(Containers = containers)
@@ -188,36 +237,36 @@ let db () =
   //dict [("db", deployment :> obj)]
 
 
-let infra () =
-  let appLabels = inputMap ["app", input "nginx" ]
+//let infra () =
+//  let appLabels = inputMap ["app", input "nginx" ]
   
-  let containers : Pulumi.InputList<ContainerArgs> = inputList [
-    input (ContainerArgs(
-       Name = "nginx",
-       Image = "nginx",
-       Ports = inputList [ input(ContainerPortArgs(ContainerPortValue = 80)) ]
-    ))
-  ]
+//  let containers : Pulumi.InputList<ContainerArgs> = inputList [
+//    input (ContainerArgs(
+//       Name = "nginx",
+//       Image = "nginx",
+//       Ports = inputList [ input(ContainerPortArgs(ContainerPortValue = 80)) ]
+//    ))
+//  ]
  
-  let podSpecs = PodSpecArgs(Containers = containers)
+//  let podSpecs = PodSpecArgs(Containers = containers)
 
-  let deployment = 
-    Deployment("nginx",
-      DeploymentArgs
-        (Spec = DeploymentSpecArgs
-          (Selector = LabelSelectorArgs(MatchLabels = appLabels),
-           Replicas = 1,
-           Template = 
-             PodTemplateSpecArgs
-              (Metadata = ObjectMetaArgs(Labels = appLabels),
-               Spec = podSpecs))))
+//  let deployment = 
+//    Deployment("nginx",
+//      DeploymentArgs
+//        (Spec = DeploymentSpecArgs
+//          (Selector = LabelSelectorArgs(MatchLabels = appLabels),
+//           Replicas = 1,
+//           Template = 
+//             PodTemplateSpecArgs
+//              (Metadata = ObjectMetaArgs(Labels = appLabels),
+//               Spec = podSpecs))))
   
-  let name = 
-    deployment.Metadata
-    |> Outputs.apply(fun metadata -> metadata.Name)
+//  let name = 
+//    deployment.Metadata
+//    |> Outputs.apply(fun metadata -> metadata.Name)
 
-  dict [("name", name :> obj)]
+//  dict [("name", name :> obj)]
 
 [<EntryPoint>]
 let main _ =
-  Deployment.run db
+  Deployment.run infra
