@@ -13,6 +13,9 @@ let toBase64 (string: string) =
     let bytes = System.Text.Encoding.UTF8.GetBytes(string)
     System.Convert.ToBase64String(bytes)
 
+let ioMetaName (res: Namespace) =
+    io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) res.Metadata)
+
 let db () =
     let ns = Namespace("almost-automated")
 
@@ -29,7 +32,7 @@ let db () =
     let config = ConfigMap("db",
         ConfigMapArgs(
             Metadata = ObjectMetaArgs(
-                Namespace = ns.GetResourceName()
+                Namespace = ioMetaName ns
             ),
             Data = inputMap [
                 ("POSTGRES_DB", input "almostapidb")
@@ -40,7 +43,7 @@ let db () =
     let auth = Secret("db",
         SecretArgs(
             Metadata = ObjectMetaArgs(
-                Namespace = ns.GetResourceName()
+                Namespace = ioMetaName ns
             ),
             Data = inputMap [
                 ("POSTGRES_USER", input <| toBase64 "almostapidb");
@@ -51,9 +54,6 @@ let db () =
 
     let persistentVolume = PersistentVolume("db",
         PersistentVolumeArgs(
-            Metadata = ObjectMetaArgs(
-                Namespace = ns.GetResourceName()
-            ),
             Spec = PersistentVolumeSpecArgs(
                 StorageClassName = "local-path",
                 Capacity = inputMap [
@@ -70,7 +70,10 @@ let db () =
     let persistentVolumeClaim = PersistentVolumeClaim("db",
         PersistentVolumeClaimArgs(
             Metadata = ObjectMetaArgs(
-                Namespace = ns.GetResourceName()
+                Namespace = ioMetaName ns,
+                Annotations = inputMap [
+                    ("pulumi.com/skipAwait", input "true")
+                ]
             ),
             Spec = PersistentVolumeClaimSpecArgs(
                 Resources = ResourceRequirementsArgs(
@@ -86,14 +89,14 @@ let db () =
     let deployment = Deployment("db",
         DeploymentArgs(
             Metadata = ObjectMetaArgs(
-                Namespace = ns.GetResourceName()
+                Namespace = ioMetaName ns
             ),
             Spec = DeploymentSpecArgs(
                 Replicas = 1,
                 Selector = LabelSelectorArgs(MatchLabels = inputMap [ dbLabels ]),
                 Template = PodTemplateSpecArgs(
                     Metadata = ObjectMetaArgs(
-                        Namespace = ns.GetResourceName(),
+                        Namespace = ioMetaName ns,
                         Labels = inputMap [ dbLabels ]
                     ),
                     Spec = PodSpecArgs(
@@ -108,12 +111,12 @@ let db () =
                                 EnvFrom = inputList [
                                     input <| EnvFromSourceArgs(
                                         ConfigMapRef = ConfigMapEnvSourceArgs(
-                                            Name = config.GetResourceName()
+                                            Name = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) config.Metadata)
                                         )
                                     );
                                     input <| EnvFromSourceArgs(
                                         SecretRef = SecretEnvSourceArgs(
-                                            Name = auth.GetResourceName()
+                                            Name = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) auth.Metadata)
                                         )
                                     );
                                 ],
@@ -129,7 +132,7 @@ let db () =
                             input <| VolumeArgs(
                                 Name = "postgresdata",
                                 PersistentVolumeClaim = (input <| PersistentVolumeClaimVolumeSourceArgs(
-                                        ClaimName = persistentVolumeClaim.GetResourceName()
+                                        ClaimName = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) persistentVolumeClaim.Metadata)
                                 ))
                             )
                         ]
@@ -150,7 +153,7 @@ let db () =
   //  DeploymentArgs(
   //      Metadata = ObjectMetaArgs(
   //          Labels = appLabels,
-  //          Namespace = ns.GetResourceName()
+  //          Namespace = ioMetaName ns
   //      )
   //  ))
 
