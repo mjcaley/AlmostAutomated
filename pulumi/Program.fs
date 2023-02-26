@@ -9,6 +9,12 @@ open Pulumi.Kubernetes.Core.V1
 open Pulumi.Kubernetes.Types.Outputs.Meta.V1
 open Pulumi.FSharp.Kubernetes.Core.V1
 open Pulumi.FSharp.Kubernetes.Meta.V1.Inputs
+open Pulumi.Kubernetes.Networking.V1
+open Pulumi.Kubernetes.Types.Inputs.Networking.V1
+open Pulumi.Kubernetes.Batch.V1
+open Pulumi.Kubernetes.Types.Inputs.Batch.V1
+open Pulumi.Kubernetes.Rbac.V1
+open Pulumi.Kubernetes.Types.Inputs.Rbac.V1
 
 
 let toBase64 (string: string) =
@@ -162,31 +168,151 @@ let db ns =
 let api ns (dbAuth: Secret) (dbConfig: ConfigMap) (dbService: Service) =
     let nsName = ioMetaName ns
 
+    let role = Role("wait-for",
+        RoleArgs(
+            Metadata = ObjectMetaArgs(
+                Namespace = nsName
+            ),
+            Rules = inputList [
+                input <| PolicyRuleArgs(
+                    ApiGroups = inputList [ input "" ],
+                    Resources = inputList [ input "services"; input "pods"; input "jobs" ],
+                    Verbs = inputList [ input "get"; input "watch"; input "listen" ]
+                );
+                input <| PolicyRuleArgs(
+                    ApiGroups = inputList [ input "batch" ],
+                    Resources = inputList [ input "services"; input "pods"; input "jobs" ],
+                    Verbs = inputList [ input "get"; input "watch"; input "listen" ]
+                )
+            ]
+        )
+    )
+
+    let roleBinding = RoleBinding("wait-for",
+        RoleBindingArgs(
+            Metadata = ObjectMetaArgs(
+                Namespace = nsName
+            ),
+            Subjects = inputList [
+                input <| SubjectArgs(
+                    Kind = "ServiceAccount",
+                    Name = "default",
+                    Namespace = nsName
+                )
+            ],
+            RoleRef = RoleRefArgs(
+                Kind = "Role",
+                Name = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) role.Metadata),
+                ApiGroup = input "rbac.authorization.k8s.io"
+            )
+        )
+    )
+
+    let job = Job("migration",
+        JobArgs(
+            Metadata = ObjectMetaArgs(
+                Namespace = nsName
+            ),
+            Spec = JobSpecArgs(
+                BackoffLimit = 1,
+                Template = PodTemplateSpecArgs(
+                    Spec = PodSpecArgs(
+                        InitContainers = inputList [
+                            input <| ContainerArgs(
+                                Name = "await-db",
+                                Image = "postgres:15",
+                                Command = inputList [ input "/bin/sh" ],
+                                Args = inputList [
+                                    input "-c";
+                                    input "until pg_isready -h $(DB_HOST) -p 5432; do echo waiting for database; sleep 2; done;"
+                                ],
+                                Env = inputList [
+                                    input <| EnvVarArgs(
+                                        Name = "DB_HOST",
+                                        Value = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) dbService.Metadata)
+                                    );
+                                ]
+                            )
+                        ],
+                        Containers = inputList [
+                            input <| ContainerArgs(
+                                Name = "migration",
+                                Image = "almost-migration:latest",
+                                ImagePullPolicy = "IfNotPresent",
+                                Command = inputList [
+                                    input "dotnet"
+                                ],
+                                Args = inputList [ input "AlmostAutomated.Migration.dll" ],
+                                Env = inputList [
+                                    input <| EnvVarArgs(
+                                        Name = "DB_HOST",
+                                        Value = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) dbService.Metadata)
+                                    );
+                                    input <| EnvVarArgs(
+                                        Name = "DB_USER",
+                                        ValueFrom = EnvVarSourceArgs(
+                                            SecretKeyRef = SecretKeySelectorArgs(
+                                                Name = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) dbAuth.Metadata),
+                                                Key = "POSTGRES_USER"
+                                            )
+                                        )
+                                    );
+                                    input <| EnvVarArgs(
+                                        Name = "DB_PASSWORD",
+                                        ValueFrom = EnvVarSourceArgs(
+                                            SecretKeyRef = SecretKeySelectorArgs(
+                                                Name = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) dbAuth.Metadata),
+                                                Key = "POSTGRES_PASSWORD"
+                                            )
+                                        )
+                                    )
+                                ]
+                            )
+                        ],
+                        RestartPolicy = "Never"
+                    )
+                )
+            )
+        )
+    )
+
     let appLabels = ("app", input "api")
     
+    let containerPort = 5000
+    let portName = "api-tcp"
     let deployment = Deployment("api",
         DeploymentArgs(
             Metadata = ObjectMetaArgs(
-                Namespace = ioMetaName ns
+                Namespace = nsName
             ),
             Spec = DeploymentSpecArgs(
                 Replicas = 1,
                 Selector = LabelSelectorArgs(MatchLabels = inputMap [ appLabels ]),
                 Template = PodTemplateSpecArgs(
                     Metadata = ObjectMetaArgs(
-                        Namespace = ioMetaName ns,
+                        Namespace = nsName,
                         Labels = inputMap [ appLabels ]
                     ),
                     Spec = PodSpecArgs(
+                        InitContainers = inputList [
+                            input <| ContainerArgs(
+                                Name = "await-migration",
+                                Image = "groundnuty/k8s-wait-for:v2.0",
+                                Args = inputList [
+                                    input "job";
+                                    io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) job.Metadata)
+                                ]
+                            )
+                        ],
                         Containers = inputList [
                             input <| ContainerArgs(
-                                Name = "db",
+                                Name = "api",
                                 Image = "almost-api:latest",
                                 ImagePullPolicy = "IfNotPresent",
                                 Ports = inputList [
                                     input <| ContainerPortArgs(
-                                        Name = "postgres-tcp",
-                                        ContainerPortValue = 5000
+                                        Name = portName,
+                                        ContainerPortValue = containerPort
                                     )
                                 ],
                                 Env = inputList [
@@ -196,13 +322,35 @@ let api ns (dbAuth: Secret) (dbConfig: ConfigMap) (dbService: Service) =
                                     );
                                     input <| EnvVarArgs(
                                         Name = "DB_USER",
-                                        Value = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) dbAuth.Metadata)
+                                        ValueFrom = EnvVarSourceArgs(
+                                            SecretKeyRef = SecretKeySelectorArgs(
+                                                Name = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) dbAuth.Metadata),
+                                                Key = "POSTGRES_USER"
+                                            )
+                                        )
                                     );
                                     input <| EnvVarArgs(
                                         Name = "DB_PASSWORD",
-                                        Value = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) dbAuth.Metadata)
+                                        ValueFrom = EnvVarSourceArgs(
+                                            SecretKeyRef = SecretKeySelectorArgs(
+                                                Name = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) dbAuth.Metadata),
+                                                Key = "POSTGRES_PASSWORD"
+                                            )
+                                        )
                                     )
-                                ]
+                                ],
+                                LivenessProbe = ProbeArgs(
+                                    HttpGet = HTTPGetActionArgs(
+                                        Path = "/",
+                                        Port = portName
+                                    )
+                                ),
+                                ReadinessProbe = ProbeArgs(
+                                    HttpGet = HTTPGetActionArgs(
+                                        Path = "/",
+                                        Port = portName
+                                    )
+                                )
                             )
                         ]
                     )
@@ -211,7 +359,56 @@ let api ns (dbAuth: Secret) (dbConfig: ConfigMap) (dbService: Service) =
         )
     )
 
-    {| Service = "" |}
+    let service = Service("api",
+        ServiceArgs(
+            Metadata = ObjectMetaArgs(
+                Namespace = nsName
+            ),
+            Spec = ServiceSpecArgs(
+                Selector = inputMap [
+                    appLabels
+                ],
+                Ports = ServicePortArgs(
+                    Name = portName,
+                    Port = containerPort,
+                    TargetPort = portName
+                )
+            )
+        )
+    )
+
+    let ingress = Ingress("api",
+        IngressArgs(
+            Metadata = ObjectMetaArgs(
+                Namespace = nsName
+            ),
+            Spec = IngressSpecArgs(
+                Rules = inputList [
+                    input <| IngressRuleArgs(
+                        Host = "api.almostautomated.local",
+                        Http = HTTPIngressRuleValueArgs(
+                            Paths = inputList [
+                                input <| HTTPIngressPathArgs(
+                                    Path = "/api",
+                                    PathType = "Prefix",
+                                    Backend = IngressBackendArgs(
+                                        Service = IngressServiceBackendArgs(
+                                            Name = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) service.Metadata),
+                                            Port = ServiceBackendPortArgs(
+                                                Number = containerPort
+                                            )
+                                        )
+                                    )
+                                )
+                            ]
+                        )
+                    )
+                ]
+            )
+        )
+    )
+
+    {| Ingress = ingress :> obj |}
 
 
 let infra () =
