@@ -1,381 +1,410 @@
 ﻿module Program
 
 open Pulumi.FSharp
-open Pulumi.Kubernetes.Types.Inputs.Core.V1
-open Pulumi.Kubernetes.Types.Inputs.Apps.V1
-open Pulumi.Kubernetes.Types.Inputs.Meta.V1
-open Pulumi.Kubernetes.Apps.V1
-open Pulumi.Kubernetes.Core.V1
-open Pulumi.Kubernetes.Types.Outputs.Meta.V1
 open Pulumi.FSharp.Kubernetes.Core.V1
 open Pulumi.FSharp.Kubernetes.Meta.V1.Inputs
-open Pulumi.Kubernetes.Networking.V1
-open Pulumi.Kubernetes.Types.Inputs.Networking.V1
-open Pulumi.Kubernetes.Batch.V1
-open Pulumi.Kubernetes.Types.Inputs.Batch.V1
-open Pulumi.Kubernetes.Rbac.V1
-open Pulumi.Kubernetes.Types.Inputs.Rbac.V1
+open Pulumi.FSharp.Kubernetes.Apps.V1.Inputs
 
 
 let toBase64 (string: string) =
     let bytes = System.Text.Encoding.UTF8.GetBytes(string)
     System.Convert.ToBase64String(bytes)
 
-let ioMetaName (res: Namespace) =
-    io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) res.Metadata)
+let ioMetaName (res: Pulumi.Kubernetes.Core.V1.Namespace) =
+    io (Outputs.apply (fun (m: Pulumi.Kubernetes.Types.Outputs.Meta.V1.ObjectMeta) -> m.Name) res.Metadata)
+
+
+let namespaceName (ns: Pulumi.Kubernetes.Core.V1.Namespace) =
+    Outputs.apply (fun (m: Pulumi.Kubernetes.Types.Outputs.Meta.V1.ObjectMeta) -> m.Name) ns.Metadata
+
+let configMapName (config: Pulumi.Kubernetes.Core.V1.ConfigMap) =
+    Outputs.apply (fun (m: Pulumi.Kubernetes.Types.Outputs.Meta.V1.ObjectMeta) -> m.Name) config.Metadata
+
+let jobName (job: Pulumi.Kubernetes.Batch.V1.Job) =
+    Outputs.apply (fun (m: Pulumi.Kubernetes.Types.Outputs.Meta.V1.ObjectMeta) -> m.Name) job.Metadata
+
+let pvcName (pvc: Pulumi.Kubernetes.Core.V1.PersistentVolumeClaim) =
+    Outputs.apply (fun (m: Pulumi.Kubernetes.Types.Outputs.Meta.V1.ObjectMeta) -> m.Name) pvc.Metadata
+
+let roleName (role: Pulumi.Kubernetes.Rbac.V1.Role) =
+    Outputs.apply (fun (m: Pulumi.Kubernetes.Types.Outputs.Meta.V1.ObjectMeta) -> m.Name) role.Metadata
+
+let secretName (secret: Pulumi.Kubernetes.Core.V1.Secret) =
+    Outputs.apply (fun (m: Pulumi.Kubernetes.Types.Outputs.Meta.V1.ObjectMeta) -> m.Name) secret.Metadata
+
+let serviceName (service: Pulumi.Kubernetes.Core.V1.Service) =
+    Outputs.apply (fun (m: Pulumi.Kubernetes.Types.Outputs.Meta.V1.ObjectMeta) -> m.Name) service.Metadata
 
 
 let ns () =
-    Namespace("almost-automated")
+    ``namespace`` {
+        name "almost-automated"
+    }
 
-let db ns =
-    let config = ConfigMap("db",
-        ConfigMapArgs(
-            Metadata = ObjectMetaArgs(
-                Namespace = ioMetaName ns
-            ),
-            Data = inputMap [
-                ("POSTGRES_DB", input "almostapidb")
+let db (ns: Pulumi.Kubernetes.Core.V1.Namespace) =
+    let config = configMap {
+        name "db"
+
+        objectMeta {
+            ``namespace`` (namespaceName ns)
+        }
+        data [ ("POSTGRES_DB", "almostapidb") ]
+    }
+
+    let auth = secret {
+        name "db"
+
+        objectMeta {
+            ``namespace`` (namespaceName ns)
+        }
+
+        data [
+            ("POSTGRES_USER", toBase64 "almostapidb");
+            ("POSTGRES_PASSWORD", toBase64 "password");
+        ]
+    }
+
+    let pv = persistentVolume {
+        name "db"
+
+        objectMeta {
+            ``namespace`` (namespaceName ns)
+        }
+
+        Pulumi.FSharp.Kubernetes.Core.V1.Inputs.persistentVolumeSpec {
+            storageClassName "local-path"
+            capacity [ ("storage", "1Gi") ]
+            accessModes [ "ReadWriteMany" ]
+            Pulumi.FSharp.Kubernetes.Core.V1.Inputs.hostPathVolumeSource {
+                path "/data/db"
+            }
+        }
+    }
+
+    let pvc = persistentVolumeClaim {
+        name "db"
+
+        objectMeta {
+            ``namespace`` (namespaceName ns)
+            annotations [ ("pulumi.com/skipAwait", "true") ]
+        }
+
+        Pulumi.FSharp.Kubernetes.Core.V1.Inputs.persistentVolumeClaimSpec {
+            Pulumi.FSharp.Kubernetes.Core.V1.Inputs.resourceRequirements {
+                requests [ "storage", "1Gi"]
+            }
+            accessModes [ "ReadWriteMany" ]
+        }
+    }
+
+    let dbLabels = [ ("app", input "db") ]
+
+    let deployment = Pulumi.FSharp.Kubernetes.Apps.V1.deployment {
+        name "db"
+
+        objectMeta { ``namespace`` (namespaceName ns) }
+
+        deploymentSpec {
+            replicas 1
+            labelSelector {
+                matchLabels dbLabels
+            }
+            Pulumi.FSharp.Kubernetes.Core.V1.Inputs.podTemplateSpec {
+                objectMeta {
+                    ``namespace`` (namespaceName ns)
+                    labels dbLabels
+                }
+                Pulumi.FSharp.Kubernetes.Core.V1.Inputs.podSpec {
+                    containers [
+                        Pulumi.FSharp.Kubernetes.Core.V1.Inputs.container {
+                            name "db"
+                            image "postgres:15"
+                            imagePullPolicy "IfNotPresent"
+                            ports [
+                                Pulumi.FSharp.Kubernetes.Core.V1.Inputs.containerPort {
+                                    name "postgres-tcp"
+                                    containerPortValue 5432
+                                }
+                            ]
+                            envFrom [
+                                Pulumi.FSharp.Kubernetes.Core.V1.Inputs.envFromSource {
+                                    Pulumi.FSharp.Kubernetes.Core.V1.Inputs.configMapEnvSource {
+                                        name (configMapName config)
+                                    }
+                                };
+                                Pulumi.FSharp.Kubernetes.Core.V1.Inputs.envFromSource {
+                                    Pulumi.FSharp.Kubernetes.Core.V1.Inputs.secretEnvSource {
+                                        name (secretName auth)
+                                    }
+                                }
+                            ]
+                            volumeMounts [
+                                Pulumi.FSharp.Kubernetes.Core.V1.Inputs.volumeMount {
+                                    name "postgresdata"
+                                    mountPath "/var/lib/postgresql/data"
+                                }
+                            ]
+                        }
+                    ]
+                    volumes [
+                        Pulumi.FSharp.Kubernetes.Core.V1.Inputs.volume {
+                            name "postgresdata"
+                            Pulumi.FSharp.Kubernetes.Core.V1.Inputs.persistentVolumeClaimVolumeSource {
+                                claimName (pvcName pvc)
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+
+    let service = service {
+        name "db"
+        objectMeta { ``namespace`` (namespaceName ns) }
+
+        Pulumi.FSharp.Kubernetes.Core.V1.Inputs.serviceSpec {
+            selector dbLabels
+            ports [
+                Pulumi.FSharp.Kubernetes.Core.V1.Inputs.servicePort {
+                    name "postgres-tcp"
+                    port 5432
+                    targetPort "postgres-tcp"
+                }
             ]
-        )
-    )
-
-    let auth = Secret("db",
-        SecretArgs(
-            Metadata = ObjectMetaArgs(
-                Namespace = ioMetaName ns
-            ),
-            Data = inputMap [
-                ("POSTGRES_USER", input <| toBase64 "almostapidb");
-                ("POSTGRES_PASSWORD", input <| toBase64 "password")
-            ]
-        )
-    )
-
-    let persistentVolume = PersistentVolume("db",
-        PersistentVolumeArgs(
-            Spec = PersistentVolumeSpecArgs(
-                StorageClassName = "local-path",
-                Capacity = inputMap [
-                    "storage", input "1Gi"
-                ],
-                AccessModes = inputList [input "ReadWriteMany"],
-                HostPath = HostPathVolumeSourceArgs(
-                    Path = input "/data/db"
-                )
-            )
-        )
-    )
-
-    let persistentVolumeClaim = PersistentVolumeClaim("db",
-        PersistentVolumeClaimArgs(
-            Metadata = ObjectMetaArgs(
-                Namespace = ioMetaName ns,
-                Annotations = inputMap [
-                    ("pulumi.com/skipAwait", input "true")
-                ]
-            ),
-            Spec = PersistentVolumeClaimSpecArgs(
-                Resources = ResourceRequirementsArgs(
-                    Requests = inputMap [ ("storage", input "1Gi") ]
-                ),
-                AccessModes = inputList [input "ReadWriteMany"]
-            )
-        )
-    )
-
-    let dbLabels = ("app", input "db")
-
-    let deployment = Deployment("db",
-        DeploymentArgs(
-            Metadata = ObjectMetaArgs(
-                Namespace = ioMetaName ns
-            ),
-            Spec = DeploymentSpecArgs(
-                Replicas = 1,
-                Selector = LabelSelectorArgs(MatchLabels = inputMap [ dbLabels ]),
-                Template = PodTemplateSpecArgs(
-                    Metadata = ObjectMetaArgs(
-                        Namespace = ioMetaName ns,
-                        Labels = inputMap [ dbLabels ]
-                    ),
-                    Spec = PodSpecArgs(
-                        Containers = inputList [
-                            input <| ContainerArgs(
-                                Name = "db",
-                                Image = "postgres:15",
-                                ImagePullPolicy = "IfNotPresent",
-                                Ports = inputList [
-                                    input <| ContainerPortArgs(
-                                        Name = "postgres-tcp",
-                                        ContainerPortValue = 5432
-                                    )
-                                ],
-                                EnvFrom = inputList [
-                                    input <| EnvFromSourceArgs(
-                                        ConfigMapRef = ConfigMapEnvSourceArgs(
-                                            Name = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) config.Metadata)
-                                        )
-                                    );
-                                    input <| EnvFromSourceArgs(
-                                        SecretRef = SecretEnvSourceArgs(
-                                            Name = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) auth.Metadata)
-                                        )
-                                    );
-                                ],
-                                VolumeMounts = inputList [
-                                    input <| VolumeMountArgs(
-                                        MountPath = "/var/lib/postgresql/data",
-                                        Name = "postgresdata"
-                                    )
-                                ]
-                            )
-                        ],
-                        Volumes = inputList [
-                            input <| VolumeArgs(
-                                Name = "postgresdata",
-                                PersistentVolumeClaim = (input <| PersistentVolumeClaimVolumeSourceArgs(
-                                        ClaimName = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) persistentVolumeClaim.Metadata)
-                                ))
-                            )
-                        ]
-                    )
-                )
-            )
-        )
-    )
-
-    let service = Service("db",
-        ServiceArgs(
-            Metadata = ObjectMetaArgs(
-                Namespace = ioMetaName ns
-            ),
-            Spec = ServiceSpecArgs(
-                Selector = inputMap [
-                    dbLabels
-                ],
-                Ports = ServicePortArgs(
-                    Name = "postgres-tcp",
-                    Port = 5432,
-                    TargetPort = "postgres-tcp"
-                )
-            )
-        )
-    )
+        }
+    }
 
     auth, config, service
+
+open Pulumi.Kubernetes.Types.Inputs.Core.V1
+open Pulumi.Kubernetes.Types.Inputs.Apps.V1
+open Pulumi.Kubernetes.Types.Inputs.Meta.V1
+open Pulumi.Kubernetes.Apps.V1
+open Pulumi.Kubernetes.Core.V1
+open Pulumi.Kubernetes.Types.Outputs.Meta.V1
+open Pulumi.Kubernetes.Networking.V1
+open Pulumi.Kubernetes.Types.Inputs.Networking.V1
 
 let api ns (dbAuth: Secret) (dbConfig: ConfigMap) (dbService: Service) =
     let nsName = ioMetaName ns
 
-    let role = Role("wait-for",
-        RoleArgs(
-            Metadata = ObjectMetaArgs(
-                Namespace = nsName
-            ),
-            Rules = inputList [
-                input <| PolicyRuleArgs(
-                    ApiGroups = inputList [ input "" ],
-                    Resources = inputList [ input "services"; input "pods"; input "jobs" ],
-                    Verbs = inputList [ input "get"; input "watch"; input "listen" ]
-                );
-                input <| PolicyRuleArgs(
-                    ApiGroups = inputList [ input "batch" ],
-                    Resources = inputList [ input "services"; input "pods"; input "jobs" ],
-                    Verbs = inputList [ input "get"; input "watch"; input "listen" ]
-                )
-            ]
-        )
-    )
+    let role = Pulumi.FSharp.Kubernetes.Rbac.V1.role {
+        name "wait-for"
+        objectMeta { ``namespace`` (namespaceName ns) }
 
-    let roleBinding = RoleBinding("wait-for",
-        RoleBindingArgs(
-            Metadata = ObjectMetaArgs(
-                Namespace = nsName
-            ),
-            Subjects = inputList [
-                input <| SubjectArgs(
-                    Kind = "ServiceAccount",
-                    Name = "default",
-                    Namespace = nsName
-                )
-            ],
-            RoleRef = RoleRefArgs(
-                Kind = "Role",
-                Name = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) role.Metadata),
-                ApiGroup = input "rbac.authorization.k8s.io"
-            )
-        )
-    )
+        rules [
+            Pulumi.FSharp.Kubernetes.Rbac.V1.Inputs.policyRule {
+                apiGroups [ "" ]
+                resources [ "services"; "pods"; "jobs" ]
+                verbs [ "get"; "watch"; "listen" ]
+            };
+            Pulumi.FSharp.Kubernetes.Rbac.V1.Inputs.policyRule {
+                apiGroups [ "batch" ]
+                resources [ "services"; "pods"; "jobs" ]
+                verbs [ "get"; "watch"; "listen" ]
+            }
+        ]
+    }
 
-    let job = Job("migration",
-        JobArgs(
-            Metadata = ObjectMetaArgs(
-                Namespace = nsName
-            ),
-            Spec = JobSpecArgs(
-                BackoffLimit = 1,
-                Template = PodTemplateSpecArgs(
-                    Spec = PodSpecArgs(
-                        InitContainers = inputList [
-                            input <| ContainerArgs(
-                                Name = "await-db",
-                                Image = "postgres:15",
-                                Command = inputList [ input "/bin/sh" ],
-                                Args = inputList [
-                                    input "-c";
-                                    input "until pg_isready -h $(DB_HOST) -p 5432; do echo waiting for database; sleep 2; done;"
-                                ],
-                                Env = inputList [
-                                    input <| EnvVarArgs(
-                                        Name = "DB_HOST",
-                                        Value = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) dbService.Metadata)
-                                    );
-                                ]
-                            )
-                        ],
-                        Containers = inputList [
-                            input <| ContainerArgs(
-                                Name = "migration",
-                                Image = "almost-migration:latest",
-                                ImagePullPolicy = "IfNotPresent",
-                                Command = inputList [
-                                    input "dotnet"
-                                ],
-                                Args = inputList [ input "AlmostAutomated.Migration.dll" ],
-                                Env = inputList [
-                                    input <| EnvVarArgs(
-                                        Name = "DB_HOST",
-                                        Value = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) dbService.Metadata)
-                                    );
-                                    input <| EnvVarArgs(
-                                        Name = "DB_USER",
-                                        ValueFrom = EnvVarSourceArgs(
-                                            SecretKeyRef = SecretKeySelectorArgs(
-                                                Name = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) dbAuth.Metadata),
-                                                Key = "POSTGRES_USER"
-                                            )
-                                        )
-                                    );
-                                    input <| EnvVarArgs(
-                                        Name = "DB_PASSWORD",
-                                        ValueFrom = EnvVarSourceArgs(
-                                            SecretKeyRef = SecretKeySelectorArgs(
-                                                Name = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) dbAuth.Metadata),
-                                                Key = "POSTGRES_PASSWORD"
-                                            )
-                                        )
-                                    )
-                                ]
-                            )
-                        ],
-                        RestartPolicy = "Never"
-                    )
-                )
-            )
-        )
-    )
+    let roleBinding = Pulumi.FSharp.Kubernetes.Rbac.V1.roleBinding {
+        name "wait-for"
+        objectMeta { ``namespace`` (namespaceName ns) }
 
-    let appLabels = ("app", input "api")
-    
+        subjects [
+            Pulumi.FSharp.Kubernetes.Rbac.V1.Inputs.subject {
+                kind "ServiceAccount"
+                name "default"
+                ``namespace`` (namespaceName ns)
+            }
+        ]
+        Pulumi.FSharp.Kubernetes.Rbac.V1.Inputs.roleRef {
+            kind "Role"
+            name (roleName role)
+            apiGroup "rbac.authorization.k8s.io"
+        }
+    }
+
+    let job = Pulumi.FSharp.Kubernetes.Batch.V1.job {
+        name "migration"
+        objectMeta { ``namespace`` (namespaceName ns) }
+
+        Pulumi.FSharp.Kubernetes.Batch.V1.Inputs.jobSpec {
+            backoffLimit 1
+            Pulumi.FSharp.Kubernetes.Core.V1.Inputs.podTemplateSpec {
+                Pulumi.FSharp.Kubernetes.Core.V1.Inputs.podSpec {
+                    initContainers [
+                        Pulumi.FSharp.Kubernetes.Core.V1.Inputs.container {
+                            name "await-db"
+                            image "postgres:15"
+                            command [ "/bin/sh" ]
+                            args [
+                                "-c";
+                                "until pg_isready -h $(DB_HOST) -p 5432; do echo waiting for database; sleep 2; done;"
+                            ]
+                            env [
+                                Pulumi.FSharp.Kubernetes.Core.V1.Inputs.envVar {
+                                    name "DB_HOST"
+                                    value (serviceName dbService)
+                                }
+                            ]
+                        }
+                    ]
+                    containers [
+                        Pulumi.FSharp.Kubernetes.Core.V1.Inputs.container {
+                            name "migration"
+                            image "almost-migration:latest"
+                            imagePullPolicy "IfNotPresent"
+                            command [ "dotnet" ]
+                            args [ "AlmostAutomated.Migration.dll" ]
+                            env [
+                                Pulumi.FSharp.Kubernetes.Core.V1.Inputs.envVar {
+                                    name "DB_HOST"
+                                    value (serviceName dbService)
+                                };
+                                Pulumi.FSharp.Kubernetes.Core.V1.Inputs.envVar {
+                                    name "DB_USER"
+                                    Pulumi.FSharp.Kubernetes.Core.V1.Inputs.envVarSource {
+                                        Pulumi.FSharp.Kubernetes.Core.V1.Inputs.secretKeySelector {
+                                            key "POSTGRES_USER"
+                                            name (secretName dbAuth)
+                                        }
+                                    }
+                                };
+                                Pulumi.FSharp.Kubernetes.Core.V1.Inputs.envVar {
+                                    name "DB_PASSWORD"
+                                    Pulumi.FSharp.Kubernetes.Core.V1.Inputs.envVarSource {
+                                        Pulumi.FSharp.Kubernetes.Core.V1.Inputs.secretKeySelector {
+                                            key "POSTGRES_PASSWORD"
+                                            name (secretName dbAuth)
+                                        }
+                                    }
+                                };
+                            ]
+                        }
+                    ]
+                    restartPolicy "Never"
+                }
+            }
+        }
+    }
+
+    let appLabels = [ ("app", input "api") ]
     let containerPort = 5000
     let portName = "api-tcp"
-    let deployment = Deployment("api",
-        DeploymentArgs(
-            Metadata = ObjectMetaArgs(
-                Namespace = nsName
-            ),
-            Spec = DeploymentSpecArgs(
-                Replicas = 1,
-                Selector = LabelSelectorArgs(MatchLabels = inputMap [ appLabels ]),
-                Template = PodTemplateSpecArgs(
-                    Metadata = ObjectMetaArgs(
-                        Namespace = nsName,
-                        Labels = inputMap [ appLabels ]
-                    ),
-                    Spec = PodSpecArgs(
-                        InitContainers = inputList [
-                            input <| ContainerArgs(
-                                Name = "await-migration",
-                                Image = "groundnuty/k8s-wait-for:v2.0",
-                                Args = inputList [
-                                    input "job";
-                                    io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) job.Metadata)
-                                ]
-                            )
-                        ],
-                        Containers = inputList [
-                            input <| ContainerArgs(
-                                Name = "api",
-                                Image = "almost-api:latest",
-                                ImagePullPolicy = "IfNotPresent",
-                                Ports = inputList [
-                                    input <| ContainerPortArgs(
-                                        Name = portName,
-                                        ContainerPortValue = containerPort
-                                    )
-                                ],
-                                Env = inputList [
-                                    input <| EnvVarArgs(
-                                        Name = "DB_HOST",
-                                        Value = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) dbService.Metadata)
-                                    );
-                                    input <| EnvVarArgs(
-                                        Name = "DB_USER",
-                                        ValueFrom = EnvVarSourceArgs(
-                                            SecretKeyRef = SecretKeySelectorArgs(
-                                                Name = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) dbAuth.Metadata),
-                                                Key = "POSTGRES_USER"
-                                            )
-                                        )
-                                    );
-                                    input <| EnvVarArgs(
-                                        Name = "DB_PASSWORD",
-                                        ValueFrom = EnvVarSourceArgs(
-                                            SecretKeyRef = SecretKeySelectorArgs(
-                                                Name = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) dbAuth.Metadata),
-                                                Key = "POSTGRES_PASSWORD"
-                                            )
-                                        )
-                                    )
-                                ],
-                                LivenessProbe = ProbeArgs(
-                                    HttpGet = HTTPGetActionArgs(
-                                        Path = "/",
-                                        Port = portName
-                                    )
-                                ),
-                                ReadinessProbe = ProbeArgs(
-                                    HttpGet = HTTPGetActionArgs(
-                                        Path = "/",
-                                        Port = portName
-                                    )
-                                )
-                            )
-                        ]
-                    )
-                )
-            )
-        )
-    )
 
-    let service = Service("api",
-        ServiceArgs(
-            Metadata = ObjectMetaArgs(
-                Namespace = nsName
-            ),
-            Spec = ServiceSpecArgs(
-                Selector = inputMap [
-                    appLabels
-                ],
-                Ports = ServicePortArgs(
-                    Name = portName,
-                    Port = containerPort,
-                    TargetPort = portName
-                )
-            )
-        )
-    )
+    let deployment = deployment {
+        objectMeta { ``namespace`` (namespaceName ns) }
+
+        deploymentSpec {
+            replicas 1
+            labelSelector {
+                matchLabels appLabels
+            }
+            Pulumi.FSharp.Kubernetes.Core.V1.Inputs.podTemplateSpec {
+                objectMeta {
+                    ``namespace`` (namespaceName ns)
+                    labels appLabels
+                }
+                Pulumi.FSharp.Kubernetes.Core.V1.Inputs.podSpec {
+                    initContainers [
+                        Pulumi.FSharp.Kubernetes.Core.V1.Inputs.container {
+                            name "await-migration"
+                            image "groundnuty/k8s-wait-for:v2.0"
+                            args [ "job"; "$JOB" ]
+                            env [
+                                Pulumi.FSharp.Kubernetes.Core.V1.Inputs.envVar {
+                                    name "JOB"
+                                    value (jobName job)
+                                }
+                            ]
+                        }
+                    ]
+                    containers [
+                        Pulumi.FSharp.Kubernetes.Core.V1.Inputs.container {
+                            name "api"
+                            image "almost-api:latest"
+                            imagePullPolicy "IfNotPresent"
+                            ports [
+                                Pulumi.FSharp.Kubernetes.Core.V1.Inputs.containerPort {
+                                    name portName
+                                    containerPortValue containerPort
+                                }
+                            ]
+                            env [
+                                Pulumi.FSharp.Kubernetes.Core.V1.Inputs.envVar {
+                                    name "DB_HOST"
+                                    value (serviceName dbService)
+                                };
+                                Pulumi.FSharp.Kubernetes.Core.V1.Inputs.envVar {
+                                    name "DB_USER"
+                                    Pulumi.FSharp.Kubernetes.Core.V1.Inputs.envVarSource {
+                                        Pulumi.FSharp.Kubernetes.Core.V1.Inputs.secretKeySelector {
+                                            key "POSTGRES_USER"
+                                            name (secretName dbAuth)
+                                        }
+                                    }
+                                };
+                                Pulumi.FSharp.Kubernetes.Core.V1.Inputs.envVar {
+                                    name "DB_PASSWORD"
+                                    Pulumi.FSharp.Kubernetes.Core.V1.Inputs.envVarSource {
+                                        Pulumi.FSharp.Kubernetes.Core.V1.Inputs.secretKeySelector {
+                                            key "POSTGRES_PASSWORD"
+                                            name (secretName dbAuth)
+                                        }
+                                    }
+                                };
+                            ]
+                            livenessProbe (ProbeArgs(
+                                HttpGet = HTTPGetActionArgs(
+                                    Path = "/",
+                                    Port = portName
+                                )
+                            ))
+                            readinessProbe (ProbeArgs(
+                                HttpGet = HTTPGetActionArgs(
+                                    Path = "/",
+                                    Port = portName
+                                )
+                            ))
+                        }
+                    ]
+                }
+            }
+        }
+    }
+
+    let service = service {
+        name "api"
+        objectMeta { ``namespace`` (namespaceName ns) }
+
+        Pulumi.FSharp.Kubernetes.Core.V1.Inputs.serviceSpec {
+            selector appLabels
+            ports [
+                Pulumi.FSharp.Kubernetes.Core.V1.Inputs.servicePort {
+                    name portName
+                    port containerPort
+                    targetPort portName
+                }
+            ]
+        }
+    }
+
+    let ingress = Pulumi.FSharp.Kubernetes.Networking.V1.ingress {
+        name "api"
+        objectMeta { ``namespace`` (namespaceName ns) }
+
+        Pulumi.FSharp.Kubernetes.Networking.V1.Inputs.ingressSpec {
+            rules [
+                Pulumi.FSharp.Kubernetes.Networking.V1.Inputs.hTTPIngressRuleValue {
+                    host "api.almostautomated.local"
+                    paths [
+                        
+                    ]
+                }
+            ]
+        }
+    }
 
     let ingress = Ingress("api",
         IngressArgs(
@@ -413,56 +442,13 @@ let api ns (dbAuth: Secret) (dbConfig: ConfigMap) (dbService: Service) =
 
 let infra () =
     let ns = ns ()
+
     let dbAuth, dbConfig, dbService = db ns
     let api = api ns dbAuth dbConfig dbService
 
     dict [
         ("namespace", ns :> obj)
     ]
-
-
-  //let podSpecs = PodSpecArgs(Containers = containers)
-
-  //let deployment = Deployment("postgres",
-  //  DeploymentArgs(
-  //      Metadata = ObjectMetaArgs(
-  //          Labels = appLabels,
-  //          Namespace = ioMetaName ns
-  //      )
-  //  ))
-
-  //dict [("db", deployment :> obj)]
-
-
-//let infra () =
-//  let appLabels = inputMap ["app", input "nginx" ]
-  
-//  let containers : Pulumi.InputList<ContainerArgs> = inputList [
-//    input (ContainerArgs(
-//       Name = "nginx",
-//       Image = "nginx",
-//       Ports = inputList [ input(ContainerPortArgs(ContainerPortValue = 80)) ]
-//    ))
-//  ]
- 
-//  let podSpecs = PodSpecArgs(Containers = containers)
-
-//  let deployment = 
-//    Deployment("nginx",
-//      DeploymentArgs
-//        (Spec = DeploymentSpecArgs
-//          (Selector = LabelSelectorArgs(MatchLabels = appLabels),
-//           Replicas = 1,
-//           Template = 
-//             PodTemplateSpecArgs
-//              (Metadata = ObjectMetaArgs(Labels = appLabels),
-//               Spec = podSpecs))))
-  
-//  let name = 
-//    deployment.Metadata
-//    |> Outputs.apply(fun metadata -> metadata.Name)
-
-//  dict [("name", name :> obj)]
 
 [<EntryPoint>]
 let main _ =
