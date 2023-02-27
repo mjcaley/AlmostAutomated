@@ -53,7 +53,6 @@ let db (ns: Pulumi.Kubernetes.Core.V1.Namespace) =
 
     let auth = secret {
         name "db"
-
         objectMeta {
             ``namespace`` (namespaceName ns)
         }
@@ -66,7 +65,6 @@ let db (ns: Pulumi.Kubernetes.Core.V1.Namespace) =
 
     let pv = persistentVolume {
         name "db"
-
         objectMeta {
             ``namespace`` (namespaceName ns)
         }
@@ -83,7 +81,6 @@ let db (ns: Pulumi.Kubernetes.Core.V1.Namespace) =
 
     let pvc = persistentVolumeClaim {
         name "db"
-
         objectMeta {
             ``namespace`` (namespaceName ns)
             annotations [ ("pulumi.com/skipAwait", "true") ]
@@ -101,7 +98,6 @@ let db (ns: Pulumi.Kubernetes.Core.V1.Namespace) =
 
     let deployment = Pulumi.FSharp.Kubernetes.Apps.V1.deployment {
         name "db"
-
         objectMeta { ``namespace`` (namespaceName ns) }
 
         deploymentSpec {
@@ -177,16 +173,7 @@ let db (ns: Pulumi.Kubernetes.Core.V1.Namespace) =
 
     auth, config, service
 
-open Pulumi.Kubernetes.Types.Inputs.Core.V1
-open Pulumi.Kubernetes.Types.Inputs.Apps.V1
-open Pulumi.Kubernetes.Types.Inputs.Meta.V1
-open Pulumi.Kubernetes.Apps.V1
-open Pulumi.Kubernetes.Core.V1
-open Pulumi.Kubernetes.Types.Outputs.Meta.V1
-open Pulumi.Kubernetes.Networking.V1
-open Pulumi.Kubernetes.Types.Inputs.Networking.V1
-
-let api ns (dbAuth: Secret) (dbConfig: ConfigMap) (dbService: Service) =
+let api ns (dbAuth: Pulumi.Kubernetes.Core.V1.Secret) (dbConfig: Pulumi.Kubernetes.Core.V1.ConfigMap) (dbService: Pulumi.Kubernetes.Core.V1.Service) =
     let nsName = ioMetaName ns
 
     let role = Pulumi.FSharp.Kubernetes.Rbac.V1.role {
@@ -197,12 +184,12 @@ let api ns (dbAuth: Secret) (dbConfig: ConfigMap) (dbService: Service) =
             Pulumi.FSharp.Kubernetes.Rbac.V1.Inputs.policyRule {
                 apiGroups [ "" ]
                 resources [ "services"; "pods"; "jobs" ]
-                verbs [ "get"; "watch"; "listen" ]
+                verbs [ "get"; "watch"; "list" ]
             };
             Pulumi.FSharp.Kubernetes.Rbac.V1.Inputs.policyRule {
                 apiGroups [ "batch" ]
                 resources [ "services"; "pods"; "jobs" ]
-                verbs [ "get"; "watch"; "listen" ]
+                verbs [ "get"; "watch"; "list" ]
             }
         ]
     }
@@ -293,7 +280,8 @@ let api ns (dbAuth: Secret) (dbConfig: ConfigMap) (dbService: Service) =
     let containerPort = 5000
     let portName = "api-tcp"
 
-    let deployment = deployment {
+    let deployment = Pulumi.FSharp.Kubernetes.Apps.V1.deployment {
+        name "api"
         objectMeta { ``namespace`` (namespaceName ns) }
 
         deploymentSpec {
@@ -307,11 +295,12 @@ let api ns (dbAuth: Secret) (dbConfig: ConfigMap) (dbService: Service) =
                     labels appLabels
                 }
                 Pulumi.FSharp.Kubernetes.Core.V1.Inputs.podSpec {
+                    serviceAccount "default"
                     initContainers [
                         Pulumi.FSharp.Kubernetes.Core.V1.Inputs.container {
                             name "await-migration"
                             image "groundnuty/k8s-wait-for:v2.0"
-                            args [ "job"; "$JOB" ]
+                            args [ "job"; "$(JOB)" ]
                             env [
                                 Pulumi.FSharp.Kubernetes.Core.V1.Inputs.envVar {
                                     name "JOB"
@@ -355,14 +344,14 @@ let api ns (dbAuth: Secret) (dbConfig: ConfigMap) (dbService: Service) =
                                     }
                                 };
                             ]
-                            livenessProbe (ProbeArgs(
-                                HttpGet = HTTPGetActionArgs(
+                            livenessProbe (Pulumi.Kubernetes.Types.Inputs.Core.V1.ProbeArgs(
+                                HttpGet = Pulumi.Kubernetes.Types.Inputs.Core.V1.HTTPGetActionArgs(
                                     Path = "/",
                                     Port = portName
                                 )
                             ))
-                            readinessProbe (ProbeArgs(
-                                HttpGet = HTTPGetActionArgs(
+                            readinessProbe (Pulumi.Kubernetes.Types.Inputs.Core.V1.ProbeArgs(
+                                HttpGet = Pulumi.Kubernetes.Types.Inputs.Core.V1.HTTPGetActionArgs(
                                     Path = "/",
                                     Port = portName
                                 )
@@ -396,49 +385,30 @@ let api ns (dbAuth: Secret) (dbConfig: ConfigMap) (dbService: Service) =
 
         Pulumi.FSharp.Kubernetes.Networking.V1.Inputs.ingressSpec {
             rules [
-                Pulumi.FSharp.Kubernetes.Networking.V1.Inputs.hTTPIngressRuleValue {
+                Pulumi.FSharp.Kubernetes.Networking.V1.Inputs.ingressRule {
                     host "api.almostautomated.local"
-                    paths [
-                        
-                    ]
+                    Pulumi.FSharp.Kubernetes.Networking.V1.Inputs.hTTPIngressRuleValue {
+                        paths [
+                            Pulumi.FSharp.Kubernetes.Networking.V1.Inputs.hTTPIngressPath {
+                                path "/api"
+                                pathType "Prefix"
+                                Pulumi.FSharp.Kubernetes.Networking.V1.Inputs.ingressBackend {
+                                    Pulumi.FSharp.Kubernetes.Networking.V1.Inputs.ingressServiceBackend {
+                                        name (serviceName service)
+                                        Pulumi.FSharp.Kubernetes.Networking.V1.Inputs.serviceBackendPort {
+                                            number containerPort
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    }
                 }
             ]
         }
     }
 
-    let ingress = Ingress("api",
-        IngressArgs(
-            Metadata = ObjectMetaArgs(
-                Namespace = nsName
-            ),
-            Spec = IngressSpecArgs(
-                Rules = inputList [
-                    input <| IngressRuleArgs(
-                        Host = "api.almostautomated.local",
-                        Http = HTTPIngressRuleValueArgs(
-                            Paths = inputList [
-                                input <| HTTPIngressPathArgs(
-                                    Path = "/api",
-                                    PathType = "Prefix",
-                                    Backend = IngressBackendArgs(
-                                        Service = IngressServiceBackendArgs(
-                                            Name = io (Outputs.apply (fun (m: ObjectMeta) -> m.Name) service.Metadata),
-                                            Port = ServiceBackendPortArgs(
-                                                Number = containerPort
-                                            )
-                                        )
-                                    )
-                                )
-                            ]
-                        )
-                    )
-                ]
-            )
-        )
-    )
-
     {| Ingress = ingress :> obj |}
-
 
 let infra () =
     let ns = ns ()

@@ -12,7 +12,7 @@ WORKDIR /app
 
 COPY --from=build /app ./
 
-ENV ASPNETCORE_URLs=http://*:5000
+ENV ASPNETCORE_URLS=http://*:5000
 ENV DB_HOST="host.docker.internal"
 ENV DB_PORT=5432
 ENV DB_USERNAME="almostapidb"
