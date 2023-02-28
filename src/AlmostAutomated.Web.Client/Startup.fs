@@ -13,7 +13,7 @@ module Program =
         builder.RootComponents.Add<Main.App>("#main")
 
         builder.Services.AddScoped<HttpClient>(fun _ ->
-            new HttpClient(BaseAddress = Uri builder.HostEnvironment.BaseAddress))
+            new HttpClient(BaseAddress = Uri "http://api.almostautomated.localhost"))
         |> ignore
 
         builder.Build().RunAsync() |> ignore

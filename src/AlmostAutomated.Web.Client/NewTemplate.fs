@@ -37,7 +37,7 @@ let update (httpClient: HttpClient) message (model: Model) =
             task {
                 let! response =
                     httpClient.PostAsJsonAsync(
-                        $"http://localhost:5268/api/templates",
+                        $"/api/templates",
                         {| Title = model.Title
                            Description = model.Description |}
                     )

@@ -162,7 +162,7 @@ let api ns dbAuth dbConfig dbService migrationJob =
             ingressSpec {
                 rules
                     [ ingressRule {
-                          host "api.almostautomated.local"
+                          host "api.almostautomated.localhost"
 
                           hTTPIngressRuleValue {
                               paths

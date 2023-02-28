@@ -78,7 +78,7 @@ let web ns  =
             ingressSpec {
                 rules
                     [ ingressRule {
-                          host "almostautomated.local"
+                          host "almostautomated.localhost"
 
                           hTTPIngressRuleValue {
                               paths

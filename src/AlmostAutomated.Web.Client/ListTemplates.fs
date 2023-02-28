@@ -34,7 +34,7 @@ let update (httpClient: HttpClient) message model =
     | Init -> model, Cmd.ofMsg GetTemplates
     | GetTemplates ->
         let getTemplates () =
-            httpClient.GetFromJsonAsync<TemplateDTO[]>("http://localhost:5268/api/templates")
+            httpClient.GetFromJsonAsync<TemplateDTO[]>("/api/templates")
 
         let successTemplatesCmd templates = List.ofArray templates |> GotTemplates
 
@@ -43,7 +43,7 @@ let update (httpClient: HttpClient) message model =
     | GotTemplates templates -> { model with Templates = templates }, Cmd.none
     | DeleteTemplate id ->
         let deleteTemplate () =
-            httpClient.DeleteAsync($"http://localhost:5268/api/templates/{id}")
+            httpClient.DeleteAsync($"/api/templates/{id}")
 
         let successDeleteCmd _ =
             model.Templates |> List.filter (fun t -> t.Id <> id) |> GotTemplates
