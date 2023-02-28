@@ -7,35 +7,32 @@ open Utilities
 
 
 let dbVolume ns =
-    let pv = persistentVolume {
-        name "db"
-        objectMeta {
-            ``namespace`` (namespaceName ns)
-        }
+    let pv =
+        persistentVolume {
+            name "db"
+            objectMeta { ``namespace`` (namespaceName ns) }
 
-        persistentVolumeSpec {
-            storageClassName "local-path"
-            capacity [ ("storage", "1Gi") ]
-            accessModes [ "ReadWriteMany" ]
-            hostPathVolumeSource {
-                path "/data/db"
+            persistentVolumeSpec {
+                storageClassName "local-path"
+                capacity [ ("storage", "1Gi") ]
+                accessModes [ "ReadWriteMany" ]
+                hostPathVolumeSource { path "/data/db" }
             }
         }
-    }
 
-    let pvc = persistentVolumeClaim {
-        name "db"
-        objectMeta {
-            ``namespace`` (namespaceName ns)
-            annotations [ ("pulumi.com/skipAwait", "true") ]
-        }
+    let pvc =
+        persistentVolumeClaim {
+            name "db"
 
-        persistentVolumeClaimSpec {
-            resourceRequirements {
-                requests [ "storage", "1Gi"]
+            objectMeta {
+                ``namespace`` (namespaceName ns)
+                annotations [ ("pulumi.com/skipAwait", "true") ]
             }
-            accessModes [ "ReadWriteMany" ]
+
+            persistentVolumeClaimSpec {
+                resourceRequirements { requests [ "storage", "1Gi" ] }
+                accessModes [ "ReadWriteMany" ]
+            }
         }
-    }
 
     pvc

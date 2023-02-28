@@ -15,11 +15,7 @@ let infra () =
     let migrationJob = migrationJob ns dbService dbAuth
     let apiDeployment = api ns dbAuth dbConfig dbService migrationJob
 
-    dict [
-        ("namespace", ns :> obj);
-        ("apiIngress", apiDeployment.Ingress)
-    ]
+    dict [ ("namespace", ns :> obj); ("apiIngress", apiDeployment.Ingress) ]
 
 [<EntryPoint>]
-let main _ =
-  Deployment.run infra
+let main _ = Deployment.run infra
