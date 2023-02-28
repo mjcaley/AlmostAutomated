@@ -20,7 +20,7 @@ let main args =
 
     printfn $"Connecting to PostgreSQL: Host={host}; Port={port}; Database={database}; User={username};"
 
-    let connectionString = 
+    let connectionString =
         $"Include Error Detail=True;Host={host};Port={port};Database={database};Username={username};Password={password}"
 
     migrate connectionString

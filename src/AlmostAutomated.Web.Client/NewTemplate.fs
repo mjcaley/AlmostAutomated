@@ -67,6 +67,7 @@ let view model dispatch =
             attr.``for`` "title"
             "Title"
         }
+
         input {
             attr.id "title"
             bind.input.string model.Title (dispatch << SetTitle)
@@ -75,7 +76,8 @@ let view model dispatch =
         label {
             attr.``for`` "description"
             "Description"
-        }        
+        }
+
         input {
             attr.id "description"
             bind.input.string model.Description (dispatch << SetDescription)

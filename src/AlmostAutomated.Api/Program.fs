@@ -29,6 +29,7 @@ let main args =
 
         let connectionString =
             $"Include Error Detail=True;Host={host};Port={port};Database={database};Username={username};Password={password}"
+
         printfn "Connection string: %s" connectionString
 
         let dataSource = Npgsql.NpgsqlDataSource.Create(connectionString)
