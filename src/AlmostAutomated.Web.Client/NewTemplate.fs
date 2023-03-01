@@ -37,7 +37,7 @@ let update (httpClient: HttpClient) message (model: Model) =
             task {
                 let! response =
                     httpClient.PostAsJsonAsync(
-                        $"http://localhost:5268/api/templates",
+                        $"/api/templates",
                         {| Title = model.Title
                            Description = model.Description |}
                     )
@@ -67,6 +67,7 @@ let view model dispatch =
             attr.``for`` "title"
             "Title"
         }
+
         input {
             attr.id "title"
             bind.input.string model.Title (dispatch << SetTitle)
@@ -75,7 +76,8 @@ let view model dispatch =
         label {
             attr.``for`` "description"
             "Description"
-        }        
+        }
+
         input {
             attr.id "description"
             bind.input.string model.Description (dispatch << SetDescription)

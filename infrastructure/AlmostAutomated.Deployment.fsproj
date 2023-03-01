@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Utilities.fs" />
+    <Compile Include="DatabaseVolume.fs" />
+    <Compile Include="Namespace.fs" />
+    <Compile Include="Database.fs" />
+    <Compile Include="Migration.fs" />
+    <Compile Include="Api.fs" />
+    <Compile Include="Web.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Pulumi" Version="3.*" />
+    <PackageReference Include="Pulumi.FSharp" Version="3.*" />
+    <PackageReference Include="Pulumi.FSharp.Kubernetes" Version="3.22.0.9" />
+    <PackageReference Include="Pulumi.Kubernetes" Version="3.*" />
+  </ItemGroup>
+
+</Project>

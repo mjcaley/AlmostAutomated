@@ -34,7 +34,7 @@ let update (httpClient: HttpClient) message model =
     | Init -> model, Cmd.ofMsg GetTemplates
     | GetTemplates ->
         let getTemplates () =
-            httpClient.GetFromJsonAsync<TemplateDTO[]>("http://localhost:5268/api/templates")
+            httpClient.GetFromJsonAsync<TemplateDTO[]>("/api/templates")
 
         let successTemplatesCmd templates = List.ofArray templates |> GotTemplates
 
@@ -43,7 +43,7 @@ let update (httpClient: HttpClient) message model =
     | GotTemplates templates -> { model with Templates = templates }, Cmd.none
     | DeleteTemplate id ->
         let deleteTemplate () =
-            httpClient.DeleteAsync($"http://localhost:5268/api/templates/{id}")
+            httpClient.DeleteAsync($"/api/templates/{id}")
 
         let successDeleteCmd _ =
             model.Templates |> List.filter (fun t -> t.Id <> id) |> GotTemplates
@@ -74,46 +74,53 @@ let view (router: Router<Page, 'model, 'msg>) model dispatch =
                 attr.``class`` "container"
 
                 for template in model.Templates do
-                div {
-                    attr.id $"template-id-{template.Id}"
-                    attr.``class`` "card"
-
                     div {
-                        attr.``class`` "card-content"
-
-                        div { attr.``class`` "title"; template.Title }
-                        div { attr.``class`` "content"; template.Description }
-                    }
-
-                    div {
-                        attr.``class`` "card-footer"
+                        attr.id $"template-id-{template.Id}"
+                        attr.``class`` "card"
 
                         div {
-                            attr.``class`` "field is-grouped"
-                    
-                            div {
-                                attr.``class`` "card-footer-item control"
-                        
-                                a {
-                                    attr.``class`` "button is-primary"
-                                    router.HRef <| EditTemplate template.Id
-                                    "Edit"
-                                }
-                            }
-                    
-                            div {
-                                attr.``class`` "card-footer-item control"
+                            attr.``class`` "card-content"
 
-                                button {
-                                    attr.``class`` "button is-danger"
-                                    on.click (fun _ -> dispatch (DeleteTemplate template.Id))
-                                    text "Delete"
+                            div {
+                                attr.``class`` "title"
+                                template.Title
+                            }
+
+                            div {
+                                attr.``class`` "content"
+                                template.Description
+                            }
+                        }
+
+                        div {
+                            attr.``class`` "card-footer"
+
+                            div {
+                                attr.``class`` "field is-grouped"
+
+                                div {
+                                    attr.``class`` "card-footer-item control"
+
+                                    a {
+                                        attr.``class`` "button is-primary"
+                                        router.HRef <| EditTemplate template.Id
+                                        "Edit"
+                                    }
+                                }
+
+                                div {
+                                    attr.``class`` "card-footer-item control"
+
+                                    button {
+                                        attr.``class`` "button is-danger"
+                                        on.click (fun _ -> dispatch (DeleteTemplate template.Id))
+                                        text "Delete"
+                                    }
                                 }
                             }
                         }
                     }
-                }
             }
         }
-        
+
     }
