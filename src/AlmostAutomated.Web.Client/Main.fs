@@ -47,7 +47,8 @@ let update (httpClient: HttpClient) message model =
 let view model dispatch =
     div {
         div {
-            id "sidebar"
+            attr.id "sidebar"
+            attr.``class`` "fixed left-0 bottom-0 flex w-3/4 -translate-x-full flex-col overflow-y-auto bg-gray-700 pt-6 pb-8 sm:max-w-xs lg:w-80"
 
             a {
                 router.HRef Home
