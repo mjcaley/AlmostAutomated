@@ -56,71 +56,62 @@ let update (httpClient: HttpClient) message model =
 
 let view (router: Router<Page, 'model, 'msg>) model dispatch =
     div {
-        attr.style "padding: 1;"
+        div {
+            attr.``class`` "flex justify-between"
 
-        h1 { "Templates" }
-        p { text $"Error: {model.ErrorMessage}" }
+            h2 {
+                attr.``class`` "text-xl"
+                "Templates"
+            }
 
-        a {
-            attr.``class`` "button is-primary"
-            router.HRef NewTemplate
-            "New"
+            a {
+                attr.``class`` "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                router.HRef NewTemplate
+                "New"
+            }
         }
 
-        section {
-            attr.``class`` "section"
+        div {
+            //attr.``class`` "section"
 
             div {
-                attr.``class`` "container"
+                attr.``class`` "grid gap-4 grid-flow-col"
 
                 for template in model.Templates do
                     div {
                         attr.id $"template-id-{template.Id}"
-                        attr.``class`` "card"
+                        attr.``class`` "w-60 p-4 shadow rounded"
 
                         div {
-                            attr.``class`` "card-content"
+                            attr.``class`` "m-2"
 
-                            div {
-                                attr.``class`` "title"
+                            p {
+                                attr.``class`` "font-bold truncate"
                                 template.Title
                             }
 
-                            div {
-                                attr.``class`` "content"
+                            p {
+                                attr.``class`` "h-16 truncate"
                                 template.Description
                             }
                         }
 
                         div {
-                            attr.``class`` "card-footer"
+                            attr.``class`` "bottom-0"
 
-                            div {
-                                attr.``class`` "field is-grouped"
+                            a {
+                                attr.``class`` "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mx-1 rounded"
+                                router.HRef <| EditTemplate template.Id
+                                "Edit"
+                            }
 
-                                div {
-                                    attr.``class`` "card-footer-item control"
-
-                                    a {
-                                        attr.``class`` "button is-primary"
-                                        router.HRef <| EditTemplate template.Id
-                                        "Edit"
-                                    }
-                                }
-
-                                div {
-                                    attr.``class`` "card-footer-item control"
-
-                                    button {
-                                        attr.``class`` "button is-danger"
-                                        on.click (fun _ -> dispatch (DeleteTemplate template.Id))
-                                        text "Delete"
-                                    }
-                                }
+                            a {
+                                attr.``class`` "bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 mx-1 rounded"
+                                on.click (fun _ -> dispatch (DeleteTemplate template.Id))
+                                text "Delete"
                             }
                         }
                     }
             }
         }
-
     }

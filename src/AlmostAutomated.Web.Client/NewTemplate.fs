@@ -62,35 +62,43 @@ let update (httpClient: HttpClient) message (model: Model) =
     | SetDescription d -> { model with Description = d }, Cmd.ofMsg Edit
 
 let view model dispatch =
-    div {
-        label {
-            attr.``for`` "title"
-            "Title"
-        }
+    form {
+        attr.``class`` "justify-center"
 
-        input {
-            attr.id "title"
-            bind.input.string model.Title (dispatch << SetTitle)
+        div {
+            label {
+                attr.``for`` "title"
+                "Title"
+            }
+            input {
+                attr.id "title"
+                attr.``class`` "w-1/3 border border-gray-300 rounded block"
+                bind.input.string model.Title (dispatch << SetTitle)
+            }
         }
-
-        label {
-            attr.``for`` "description"
-            "Description"
-        }
-
-        input {
-            attr.id "description"
-            bind.input.string model.Description (dispatch << SetDescription)
+        
+        div {
+            label {
+                attr.``for`` "description"
+                "Description"
+            }
+            input {
+                attr.id "description"
+                attr.``class`` "w-1/3 border border-gray-300 rounded block"
+                bind.input.string model.Description (dispatch << SetDescription)
+            }
         }
 
         match model.Id with
         | Some _ ->
             button {
+                attr.``class`` "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 m-2 rounded"
                 on.click (fun _ -> dispatch SaveExisting)
                 "Save"
             }
         | None ->
             button {
+                attr.``class`` "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 my-2 rounded"
                 on.click (fun _ -> dispatch SaveNew)
                 "Save"
             }

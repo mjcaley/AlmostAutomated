@@ -46,21 +46,48 @@ let update (httpClient: HttpClient) message model =
 
 let view model dispatch =
     div {
-        div {
-            id "sidebar"
+        attr.``class`` "flex"
 
-            a {
-                router.HRef Home
-                "Home"
-            }
+        aside {
+            attr.id "sidebar"
+            attr.``class`` "h-screen w-40 bg-gray-600"
 
-            a {
-                router.HRef ListTemplates
-                "Templates"
+            div {
+                attr.``class`` "sticky top-0 w-full"
+
+                h1 {
+                    attr.``class`` "p-2 text-xl text-white font-bold"
+
+                    "Almost Automated"
+                }
+
+                ul {
+                    li {
+                        attr.``class`` "p-2 text-white hover:bg-gray-400 transition duration-100"
+    
+                        a {
+                            attr.``class`` "w-full"
+
+                            router.HRef Home
+                            "Home"
+                        }
+                    }
+
+                    li {
+                        attr.``class`` "p-2 text-white hover:bg-gray-400 transition duration-100"
+
+                        a {
+                            router.HRef ListTemplates
+                            "Templates"
+                        }
+                    }
+                }
             }
         }
 
         content {
+            attr.``class`` "w-full sm:w-2/3 md:w-3/4 p-7"
+
             match model.Page with
             | Home -> h1 { text "Home" }
             | ListTemplates -> ListTemplates.view router model.ListTemplatesState (ListTemplatesMsg >> dispatch)
