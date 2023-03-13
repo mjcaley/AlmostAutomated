@@ -11,7 +11,7 @@ open AlmostAutomated.Core.DTO
 [<Fact>]
 let ``List template returns list of DTO`` () =
     task {
-        let testInput: Template.Select list =
+        let testInput: Templates list =
             [ { Id = 1L
                 Created = DateTime.UtcNow
                 Deleted = None
@@ -32,8 +32,9 @@ let ``List template returns list of DTO`` () =
                 Description = "description" } ]
 
         let listRepo = task { return testInput }
+        let deletedRepo = task { return [] }
 
-        let! templates = listTemplatesService listRepo
+        let! templates = listTemplatesService listRepo deletedRepo false
 
         templates |> should equal expected
     }
@@ -41,9 +42,9 @@ let ``List template returns list of DTO`` () =
 [<Fact>]
 let ``Get template returns DTO`` () =
     task {
-        let testInput =
+        let get _ =
             task {
-                let template: Template.Select =
+                let template: Templates =
                     { Id = 1L
                       Created = DateTime.UtcNow
                       Deleted = None
@@ -53,12 +54,23 @@ let ``Get template returns DTO`` () =
                 return template
             }
 
+        let deleted _ =
+            task {
+                raise <| NoResultsException ""
+                return 
+                    { Id = 1L
+                      Created = DateTime.UtcNow
+                      Deleted = None
+                      Title = "title"
+                      Description = "description" }
+            }
+
         let expected =
             { Id = 1L
               Title = "title"
               Description = "description" }
 
-        let! result = getTemplateService testInput
+        let! result = getTemplateService get deleted 1L false
 
         match result with
         | Ok t -> t |> should equal expected
@@ -68,10 +80,10 @@ let ``Get template returns DTO`` () =
 [<Fact>]
 let ``Get template returns none`` () =
     task {
-        let testInput =
+        let get _ =
             task {
                 raise <| NoResultsException ""
-                let result: Template.Select =
+                let result: Templates =
                     { Id = 1L
                       Created = DateTime.UtcNow
                       Deleted = None;
@@ -80,7 +92,18 @@ let ``Get template returns none`` () =
                 return result
             }
 
-        let! result = getTemplateService testInput
+        let deleted _ =
+            task {
+                raise <| NoResultsException ""
+                return 
+                    { Id = 1L
+                      Created = DateTime.UtcNow
+                      Deleted = None
+                      Title = "title"
+                      Description = "description" }
+            }
+
+        let! result = getTemplateService get deleted 1L false
 
         match result with
         | NotFound -> assert true
@@ -90,26 +113,28 @@ let ``Get template returns none`` () =
 [<Fact>]
 let ``Post template returns ID`` () =
     task {
-        let createRepo = task { return 42 }
+        let expectedTitle = "title"
+        let expectedDescription = "description"
+        let createRepo title description = task { return {| Title=title; Description=description |} }
 
-        let! result = createTemplateService createRepo
+        let! result = createTemplateService createRepo { Title=expectedTitle; Description=expectedDescription }
 
-        result |> should equal 42
+        result |> should equal {| Title=expectedTitle; Description=expectedDescription |}
     }
 
 [<Fact>]
 let ``Delete template service returns entity`` () =
     task {
-        let deletedDetails: Template.Select =
+        let deletedDetails: Templates =
             { Id = 1L
               Created = DateTime.UtcNow
               Deleted = Some DateTime.UtcNow;
               Title = "title"
               Description = "description" }
 
-        let deleteRepo = task { return deletedDetails }
+        let deleteRepo _ = task { return deletedDetails }
 
-        let! detail = deleteTemplateService deleteRepo
+        let! detail = deleteTemplateService deleteRepo 1L
 
         detail |> should equal <| Ok deletedDetails
     }

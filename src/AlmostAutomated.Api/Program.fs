@@ -9,6 +9,7 @@ open Microsoft.Extensions.Logging
 open Falco.Routing
 open Falco.HostBuilder
 open AlmostAutomated.Infrastructure.TemplateRepository
+open Services
 
 
 [<EntryPoint>]
@@ -47,10 +48,10 @@ let main args =
 
         endpoints
             [ get "/" healthCheck
-              get "/api/templates" <| listTemplatesHandler (listTemplates connectionString)
-              get "/api/templates/{id:long}" <| getTemplateHandler (getTemplateById connectionString)
-              post "/api/templates" <| createTemplateHandler (createTemplate connectionString)
-              delete "/api/templates/{id:long}" <| deleteTemplateHandler (deleteTemplate connectionString) ]
+              get "/api/templates" <| listTemplatesHandler listTemplatesService (listTemplates connectionString) (listDeletedTemplates connectionString)
+              get "/api/templates/{id:long}" <| getTemplateHandler getTemplateService (getTemplateById connectionString) (getDeletedTemplateById connectionString)
+              post "/api/templates" <| createTemplateHandler createTemplateService (createTemplate connectionString)
+              delete "/api/templates/{id:long}" <| deleteTemplateHandler deleteTemplateService (deleteTemplate connectionString) ]
     }
 
     exitCode

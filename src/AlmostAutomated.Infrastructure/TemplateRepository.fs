@@ -4,15 +4,14 @@ open AlmostAutomated.Core.Entities
 open Npgsql.FSharp
 open System.Threading.Tasks
 
-let listTemplates connectionString isDeleted : Task<Template.Select list> =
+let listTemplates connectionString : Task<Templates list> =
     connectionString
     |> Sql.connect
     |> Sql.query 
         """select * from "templates"
-        where ("templates"."deleted" is null) != @deleted
+        where "templates"."deleted" is null
         order by "templates"."id"
         """
-    |> Sql.parameters [ "@deleted", Sql.bool isDeleted ]
     |> Sql.executeAsync (fun read -> 
         {
             Id = read.int64 "id";
@@ -22,16 +21,33 @@ let listTemplates connectionString isDeleted : Task<Template.Select list> =
             Deleted = read.dateTimeOrNone "deleted";
         })
 
-let getTemplateById connectionString id isDeleted : Task<Template.Select> =
+let listDeletedTemplates connectionString : Task<Templates list> =
+    connectionString
+    |> Sql.connect
+    |> Sql.query 
+        """select * from "templates"
+        where "templates"."deleted" is not null
+        order by "templates"."id"
+        """
+    |> Sql.executeAsync (fun read -> 
+        {
+            Id = read.int64 "id";
+            Title = read.string "title";
+            Description = read.string "description";
+            Created = read.dateTime "created";
+            Deleted = read.dateTimeOrNone "deleted";
+        })
+
+let getTemplateById connectionString id : Task<Templates> =
     connectionString
     |> Sql.connect
     |> Sql.query
         """select * from "templates"
         where
             "templates"."id" = @id and
-            ("templates"."deleted" is null) != @deleted
+            "templates"."deleted" is null
         """
-    |> Sql.parameters [ "@id", Sql.int64 id; "@deleted", Sql.bool isDeleted ]
+    |> Sql.parameters [ "@id", Sql.int64 id ]
     |> Sql.executeRowAsync (fun read ->
         {
             Id = read.int64 "id";
@@ -41,7 +57,26 @@ let getTemplateById connectionString id isDeleted : Task<Template.Select> =
             Deleted = read.dateTimeOrNone "deleted";
         })
 
-let createTemplate connectionString (details: Template.Insert) : Task<Template.Select> =
+let getDeletedTemplateById connectionString id : Task<Templates> =
+    connectionString
+    |> Sql.connect
+    |> Sql.query
+        """select * from "templates"
+        where
+            "templates"."id" = @id and
+            "templates"."deleted" is not null
+        """
+    |> Sql.parameters [ "@id", Sql.int64 id ]
+    |> Sql.executeRowAsync (fun read ->
+        {
+            Id = read.int64 "id";
+            Title = read.string "title";
+            Description = read.string "description";
+            Created = read.dateTime "created";
+            Deleted = read.dateTimeOrNone "deleted";
+        })
+
+let createTemplate connectionString title description : Task<Templates> =
     connectionString
     |> Sql.connect
     |> Sql.query
@@ -52,8 +87,8 @@ let createTemplate connectionString (details: Template.Insert) : Task<Template.S
         returning *
         """
     |> Sql.parameters [
-        "@title", Sql.string details.Title;
-        "@description", Sql.string details.Description
+        "@title", Sql.string title;
+        "@description", Sql.string description
     ]
     |> Sql.executeRowAsync (fun read ->
         {
@@ -65,7 +100,7 @@ let createTemplate connectionString (details: Template.Insert) : Task<Template.S
         }
     )
 
-let deleteTemplate connectionString id : Task<Template.Select> =
+let deleteTemplate connectionString id : Task<Templates> =
     connectionString
     |> Sql.connect
     |> Sql.query 
