@@ -1,90 +1,88 @@
 ﻿module AlmostAutomated.Infrastructure.TemplateRepository
 
 open AlmostAutomated.Core.Entities
-open Dapper.FSharp.PostgreSQL
-open System.Data
-open System
+open Npgsql.FSharp
+open System.Threading.Tasks
 
-let templateTable = table'<Template.Select> "Template"
-let templateTable' = table'<Template.Insert> "Template"
-let templateDetailsTable = table'<TemplateDetails.Select> "TemplateDetails"
-let templateDetailsTable' = table'<TemplateDetails.Insert> "TemplateDetails"
+let listTemplates connectionString isDeleted : Task<Template.Select list> =
+    connectionString
+    |> Sql.connect
+    |> Sql.query 
+        """select * from "templates"
+        where ("templates"."deleted" is null) != @deleted
+        order by "templates"."id"
+        """
+    |> Sql.parameters [ "@deleted", Sql.bool isDeleted ]
+    |> Sql.executeAsync (fun read -> 
+        {
+            Id = read.int64 "id";
+            Title = read.string "title";
+            Description = read.string "description";
+            Created = read.dateTime "created";
+            Deleted = read.dateTimeOrNone "deleted";
+        })
 
-let internal isTemplateDeleted showDeleted (template: Template.Select * TemplateDetails.Select) =
-    let t = fst template
-    t.Deleted.IsSome = showDeleted
+let getTemplateById connectionString id isDeleted : Task<Template.Select> =
+    connectionString
+    |> Sql.connect
+    |> Sql.query
+        """select * from "templates"
+        where
+            "templates"."id" = @id and
+            ("templates"."deleted" is null) != @deleted
+        """
+    |> Sql.parameters [ "@id", Sql.int64 id; "@deleted", Sql.bool isDeleted ]
+    |> Sql.executeRowAsync (fun read ->
+        {
+            Id = read.int64 "id";
+            Title = read.string "title";
+            Description = read.string "description";
+            Created = read.dateTime "created";
+            Deleted = read.dateTimeOrNone "deleted";
+        })
 
-let listTemplates (dbConn: IDbConnection) isDeleted =
-    task {
-        let query =
-            select {
-                for template in templateTable do
-                    innerJoin details in templateDetailsTable on (template.Id = details.TemplateId)
-                    orderBy template.Id
-            }
+let createTemplate connectionString (details: Template.Insert) : Task<Template.Select> =
+    connectionString
+    |> Sql.connect
+    |> Sql.query
+        """insert into "templates"
+        ("created", "title", "description")
+        values
+        (now() at time zone 'utc', @title, @description)
+        returning *
+        """
+    |> Sql.parameters [
+        "@title", Sql.string details.Title;
+        "@description", Sql.string details.Description
+    ]
+    |> Sql.executeRowAsync (fun read ->
+        {
+            Id = read.int64 "id";
+            Title = read.string "title";
+            Description = read.string "description";
+            Created = read.dateTime "created";
+            Deleted = read.dateTimeOrNone "deleted";
+        }
+    )
 
-        let! results = query |> dbConn.SelectAsync<Template.Select, TemplateDetails.Select>
-        return results |> List.ofSeq |> List.filter (isTemplateDeleted isDeleted)
-    }
-
-let getTemplateById (dbConn: IDbConnection) (id: int64) isDeleted =
-    task {
-        let query =
-            select {
-                for template in templateTable do
-                    innerJoin details in templateDetailsTable on (template.Id = details.TemplateId)
-                    where (template.Id = id)
-            }
-
-        let! result = query |> dbConn.SelectAsync<Template.Select, TemplateDetails.Select>
-
-        return
-            result
-            |> List.ofSeq
-            |> List.filter (isTemplateDeleted isDeleted)
-            |> List.tryHead
-    }
-
-let createTemplate (dbConn: IDbConnection) (details: TemplateDetails.Insert') =
-    task {
-        let template: Template.Insert = { Created = DateTime.UtcNow }
-
-        let transaction = dbConn.BeginTransaction()
-
-        let! insertedTemplates =
-            insert {
-                into templateTable'
-                value template
-            }
-            |> dbConn.InsertOutputAsync<Template.Insert, Template.Select>
-
-        let insertedTemplate = insertedTemplates |> Seq.head
-
-        let! _ =
-            insert {
-                into templateDetailsTable'
-
-                value
-                    { Title = details.Title
-                      Description = details.Description
-                      TemplateId = insertedTemplate.Id }
-            }
-            |> dbConn.InsertAsync
-
-        transaction.Commit()
-
-        return insertedTemplate.Id
-    }
-
-let deleteTemplate (dbConn: IDbConnection) (id: int64) =
-    task {
-        let! result =
-            update {
-                for t in templateTable do
-                    setColumn t.Deleted (Some DateTime.UtcNow)
-                    where (t.Id = id && t.Deleted = None)
-            }
-            |> dbConn.UpdateOutputAsync<Template.Select, Template.Select>
-
-        return result |> Seq.tryHead
-    }
+let deleteTemplate connectionString id : Task<Template.Select> =
+    connectionString
+    |> Sql.connect
+    |> Sql.query 
+        """update "templates"
+        set "deleted" = (now() at time zone 'utc')
+        where
+            "id" = @id and
+            "templates"."deleted" is null
+        returning *
+        """
+    |> Sql.parameters ["@id", Sql.int64 id ]
+    |> Sql.executeRowAsync (fun read ->
+        {
+            Id = read.int64 "id";
+            Title = read.string "title";
+            Description = read.string "description";
+            Created = read.dateTime "created";
+            Deleted = read.dateTimeOrNone "deleted";
+        }
+    )

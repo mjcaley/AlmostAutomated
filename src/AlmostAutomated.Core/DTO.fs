@@ -7,9 +7,7 @@ type TemplateDTO =
       Title: string
       Description: string }
 
-let toTemplateAndDetails (templateAndDetails: Template.Select * TemplateDetails.Select) =
-    let (template, details) = templateAndDetails
-
-    { Id = template.Id
-      Title = details.Title
-      Description = details.Description }
+let toTemplateDTO (entity: Template.Select) =
+    { Id = entity.Id
+      Title = entity.Title
+      Description = entity.Description }

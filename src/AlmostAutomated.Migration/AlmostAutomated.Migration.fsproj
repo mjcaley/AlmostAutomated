@@ -9,6 +9,7 @@
     <Content Include="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="appsettings.Development.json" />
     <Compile Include="Migrations.fs" />
     <Compile Include="MigrationRunner.fs" />
     <Compile Include="Program.fs" />

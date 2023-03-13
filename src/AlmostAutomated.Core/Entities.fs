@@ -2,33 +2,13 @@
 
 open System
 
-[<CLIMutable>]
 type Select =
     { Id: int64
       Created: DateTime
-      Deleted: DateTime option }
-
-type Insert = { Created: DateTime }
-
-
-namespace AlmostAutomated.Core.Entities.TemplateDetails
-
-open System
-
-[<CLIMutable>]
-type Select =
-    { Id: int64
-
+      Deleted: DateTime option
       Title: string
-      Description: string
-      ValidFrom: DateTime
-      ValidTo: DateTime option
-
-      TemplateId: int64 }
+      Description: string }
 
 type Insert =
     { Title: string
-      Description: string
-      TemplateId: int64 }
-
-type Insert' = { Title: string; Description: string }
+      Description: string }

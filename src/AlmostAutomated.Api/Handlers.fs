@@ -7,24 +7,22 @@ open System.Data
 let healthCheck: HttpHandler = Response.withStatusCode 200 >> Response.ofEmpty
 
 let listTemplatesHandler repo : HttpHandler =
-    Services.inject<IDbConnection>
-    <| fun dbConn ctx ->
+    fun ctx ->
         task {
             let q = Request.getQuery ctx
             let deleted = q.GetBoolean("deleted", false)
-            let! result = listTemplatesService <| repo dbConn deleted
+            let! result = listTemplatesService <| repo deleted
             return Response.ofJson result ctx
         }
 
 let getTemplateHandler repo : HttpHandler =
-    Services.inject<IDbConnection>
-    <| fun dbConn ctx ->
+    fun ctx ->
         task {
             let q = Request.getQuery ctx
             let deleted = q.GetBoolean("deleted", false)
             let route = Request.getRoute ctx
             let id = route.GetInt64 "id"
-            let! result = getTemplateService <| repo dbConn id deleted
+            let! result = getTemplateService <| repo id deleted
 
             return
                 match result with
@@ -33,28 +31,26 @@ let getTemplateHandler repo : HttpHandler =
         }
 
 let createTemplateHandler repo : HttpHandler =
-    Services.inject<IDbConnection>
-    <| fun dbConn ctx ->
+    fun ctx ->
         let createTemplateHandler' details : HttpHandler =
             fun ctx ->
                 task {
 
-                    let! result = createTemplateService <| repo dbConn details
+                    let! result = createTemplateService <| repo details
                     return Response.ofJson result ctx
                 }
 
         Request.mapJson createTemplateHandler' ctx
 
 let deleteTemplateHandler repo : HttpHandler =
-    Services.inject<IDbConnection>
-    <| fun dbConn ctx ->
+    fun ctx ->
         task {
             let route = Request.getRoute ctx
             let id = route.GetInt64 "id"
-            let! result = deleteTemplateService <| repo dbConn id
+            let! result = deleteTemplateService <| repo id
 
             return
                 match result with
-                | Some r -> Response.withStatusCode 200 >> Response.ofEmpty <| ctx
-                | None -> Response.withStatusCode 404 >> Response.ofEmpty <| ctx
+                | Ok r -> Response.withStatusCode 200 >> Response.ofEmpty <| ctx
+                | NotFound -> Response.withStatusCode 404 >> Response.ofEmpty <| ctx
         }

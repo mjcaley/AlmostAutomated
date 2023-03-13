@@ -11,22 +11,28 @@ type ServiceResult<'a> =
 let listTemplatesService repo =
     task {
         let! templates = repo
-        return templates |> List.map toTemplateAndDetails
+        return templates |> List.map toTemplateDTO
     }
 
 
 let getTemplateService repo =
     task {
-        let! template = repo
-
-        return
-            match template with
-            | Some t -> t |> toTemplateAndDetails |> Ok
-            | None -> NotFound
+        try
+            let! template = repo
+            return template |> toTemplateDTO |> Ok
+        with
+        | NoResultsException _ -> return NotFound
     }
 
 
 let createTemplateService repo = task { return! repo }
 
 
-let deleteTemplateService repo = task { return! repo }
+let deleteTemplateService repo =
+    task {
+        try
+            let! result = repo
+            return Ok result
+        with 
+        | NoResultsException _ -> return NotFound
+    }

@@ -1,11 +1,13 @@
 ﻿open AlmostAutomated.Migration.MigrationRunner
 open Microsoft.Extensions.Configuration
+open System.IO
 
 [<EntryPoint>]
 let main args =
     let config =
         ConfigurationBuilder()
             .AddCommandLine(args)
+            .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", true, true)
             .AddJsonFile("appsettings.Development.json", true, true)
             .AddJsonFile("appsettings.Production.json", true, true)

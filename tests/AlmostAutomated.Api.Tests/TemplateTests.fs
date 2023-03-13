@@ -11,25 +11,17 @@ open AlmostAutomated.Core.DTO
 [<Fact>]
 let ``List template returns list of DTO`` () =
     task {
-        let testInput: (Template.Select * TemplateDetails.Select) list =
-            [ ({ Id = 1L
-                 Created = DateTime.UtcNow
-                 Deleted = None },
-               { Id = 1L
-                 Title = "title"
-                 Description = "description"
-                 ValidFrom = DateTime.UtcNow
-                 ValidTo = None
-                 TemplateId = 1L })
-              ({ Id = 2L
-                 Created = DateTime.UtcNow
-                 Deleted = None },
-               { Id = 2L
-                 Title = "title"
-                 Description = "description"
-                 ValidFrom = DateTime.UtcNow
-                 ValidTo = None
-                 TemplateId = 2L }) ]
+        let testInput: Template.Select list =
+            [ { Id = 1L
+                Created = DateTime.UtcNow
+                Deleted = None
+                Title = "title"
+                Description = "description" }
+              { Id = 2L
+                Created = DateTime.UtcNow
+                Deleted = None
+                Title = "title"
+                Description = "description"} ]
 
         let expected: TemplateDTO list =
             [ { Id = 1L
@@ -51,18 +43,12 @@ let ``Get template returns DTO`` () =
     task {
         let testInput =
             task {
-                let template: (Template.Select * TemplateDetails.Select) option =
-                    Some(
-                        { Id = 1L
-                          Created = DateTime.UtcNow
-                          Deleted = None },
-                        { Id = 1L
-                          Title = "title"
-                          Description = "description"
-                          ValidFrom = DateTime.UtcNow
-                          ValidTo = None
-                          TemplateId = 1L }
-                    )
+                let template: Template.Select =
+                    { Id = 1L
+                      Created = DateTime.UtcNow
+                      Deleted = None
+                      Title = "title"
+                      Description = "description" }
 
                 return template
             }
@@ -82,7 +68,17 @@ let ``Get template returns DTO`` () =
 [<Fact>]
 let ``Get template returns none`` () =
     task {
-        let testInput = task { return None }
+        let testInput =
+            task {
+                raise <| NoResultsException ""
+                let result: Template.Select =
+                    { Id = 1L
+                      Created = DateTime.UtcNow
+                      Deleted = None;
+                      Title = "title"
+                      Description = "description" }
+                return result
+            }
 
         let! result = getTemplateService testInput
 
@@ -105,13 +101,15 @@ let ``Post template returns ID`` () =
 let ``Delete template service returns entity`` () =
     task {
         let deletedDetails: Template.Select =
-            { Id = 42L
+            { Id = 1L
               Created = DateTime.UtcNow
-              Deleted = Some DateTime.UtcNow }
+              Deleted = Some DateTime.UtcNow;
+              Title = "title"
+              Description = "description" }
 
         let deleteRepo = task { return deletedDetails }
 
         let! detail = deleteTemplateService deleteRepo
 
-        detail |> should equal deletedDetails
+        detail |> should equal <| Ok deletedDetails
     }

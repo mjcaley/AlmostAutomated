@@ -10,41 +10,13 @@ type Initial =
     override this.Up() =
         this
             .Create
-            .Table("Template")
-            .WithColumn("Id")
-            .AsInt64()
-            .PrimaryKey()
-            .Identity()
-            .WithColumn("Created")
-            .AsDateTime()
-            .WithDefault(SystemMethods.CurrentUTCDateTime)
-            .WithColumn("Deleted")
-            .AsDateTime()
-            .Nullable()
-        |> ignore
-
-        this
-            .Create
-            .Table("TemplateDetails")
-            .WithColumn("Id")
-            .AsInt64()
-            .PrimaryKey()
-            .Identity()
-            .WithColumn("TemplateId")
-            .AsInt64()
-            .ForeignKey("Template", "Id")
-            .WithColumn("Title")
-            .AsString()
-            .WithColumn("Description")
-            .AsString()
-            .WithColumn("ValidFrom")
-            .AsDateTime()
-            .WithDefault(SystemMethods.CurrentUTCDateTime)
-            .WithColumn("ValidTo")
-            .AsDateTime()
-            .Nullable()
+            .Table("templates").WithColumn("id").AsInt64().PrimaryKey().Identity()
+            .WithColumn("created").AsDateTime().WithDefault(SystemMethods.CurrentUTCDateTime)
+            .WithColumn("deleted").AsDateTime().Nullable()
+            .WithColumn("title").AsString()
+            .WithColumn("description").AsString()
+            
         |> ignore
 
     override this.Down() =
-        this.Delete.Table("TemplateDetails") |> ignore
-        this.Delete.Table("Template") |> ignore
+        this.Delete.Table("template") |> ignore

@@ -522,3 +522,6 @@ FodyWeavers.xsd
 
 # .NET app settings
 appsettings.Development.json
+
+# Npgsql.FSharp.Analyzer connection string
+NPGSQL_FSHARP

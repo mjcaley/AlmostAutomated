@@ -20,20 +20,14 @@ let main args =
             add_env
         }
 
-    let dbConnectionService (svc: IServiceCollection) =
+    let connectionString =
         let host = config.GetValue("DB_HOST")
         let port = config.GetValue("DB_PORT")
         let database = config.GetValue("DB_NAME")
         let username = config.GetValue("DB_USERNAME")
         let password = config.GetValue("DB_PASSWORD")
 
-        let connectionString =
-            $"Include Error Detail=True;Host={host};Port={port};Database={database};Username={username};Password={password}"
-
-        printfn "Connection string: %s" connectionString
-
-        let dataSource = Npgsql.NpgsqlDataSource.Create(connectionString)
-        svc.AddScoped<IDbConnection, Npgsql.NpgsqlConnection>(fun _ -> dataSource.OpenConnection())
+        $"Include Error Detail=True;Host={host};Port={port};Database={database};Username={username};Password={password}"
 
     let exitCode = 0
 
@@ -45,8 +39,6 @@ let main args =
                 .AddConfiguration(config)
                 .SetMinimumLevel(LogLevel.Debug))
 
-        add_service (dbConnectionService)
-
         add_service (fun svc ->
             svc.AddCors(fun opt ->
                 opt.AddDefaultPolicy(fun policy -> policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader() |> ignore)))
@@ -55,10 +47,10 @@ let main args =
 
         endpoints
             [ get "/" healthCheck
-              get "/api/templates" <| listTemplatesHandler listTemplates
-              get "/api/templates/{id:long}" <| getTemplateHandler getTemplateById
-              post "/api/templates" <| createTemplateHandler createTemplate
-              delete "/api/templates/{id:long}" <| deleteTemplateHandler deleteTemplate ]
+              get "/api/templates" <| listTemplatesHandler (listTemplates connectionString)
+              get "/api/templates/{id:long}" <| getTemplateHandler (getTemplateById connectionString)
+              post "/api/templates" <| createTemplateHandler (createTemplate connectionString)
+              delete "/api/templates/{id:long}" <| deleteTemplateHandler (deleteTemplate connectionString) ]
     }
 
     exitCode
