@@ -1,6 +1,5 @@
 module AlmostAutomated.Api.Program
 
-open System.Data
 open Handlers
 open Microsoft.AspNetCore.Builder
 open Microsoft.Extensions.Configuration
@@ -48,7 +47,7 @@ let main args =
 
         endpoints
             [ get "/" healthCheck
-              get "/api/templates" <| listTemplatesHandler listTemplatesService (listTemplates connectionString) (listDeletedTemplates connectionString)
+              get "/api/templates" <| listTemplatesHandler listTemplatesService (fun () -> listTemplates connectionString) (fun () -> listDeletedTemplates connectionString)
               get "/api/templates/{id:long}" <| getTemplateHandler getTemplateService (getTemplateById connectionString) (getDeletedTemplateById connectionString)
               post "/api/templates" <| createTemplateHandler createTemplateService (createTemplate connectionString)
               delete "/api/templates/{id:long}" <| deleteTemplateHandler deleteTemplateService (deleteTemplate connectionString) ]

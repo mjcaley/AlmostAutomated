@@ -17,7 +17,7 @@ type TemplateUpdate =
 
 let listTemplatesService listRepo deletedRepo deleted =
     task {
-        let! templates = if deleted then deletedRepo else listRepo
+        let! templates = if deleted then deletedRepo () else listRepo ()
         return templates |> List.map toTemplateDTO
     }
 
